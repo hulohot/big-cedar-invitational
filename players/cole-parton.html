@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cole Parton - Big Cedar Invitational</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Source Sans Pro', sans-serif; background: #f5f5f0; color: #1a1a1a; line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #006747 0%, #004d35 100%); color: white; padding: 40px 20px; text-align: center; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+        .nav-bar { background: #004d35; padding: 15px 30px; }
+        .nav-bar a { color: white; text-decoration: none; font-weight: 600; }
+        .nav-bar a:hover { color: #ffb81c; }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        .player-hero { background: white; padding: 40px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        .player-avatar { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 700; background: linear-gradient(135deg, #ffb81c 0%, #e6a617 100%); color: #1a1a1a; text-shadow: none; }
+        .player-name { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #006747; margin-bottom: 10px; }
+        .handicap-display { font-size: 4rem; font-weight: 700; color: #ffb81c; text-shadow: 2px 2px 0 rgba(0,0,0,0.1); margin: 20px 0; }
+        .handicap-label { font-size: 1rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+        .section { background: white; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .section-header { background: #006747; color: white; padding: 20px 30px; font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 600; }
+        .section-content { padding: 30px; }
+        .info-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-weight: 600; color: #006747; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; }
+        .stat-box { background: #f9f9f7; padding: 20px; border-radius: 4px; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #006747; }
+        .stat-label { font-size: 0.85rem; color: #666; margin-top: 5px; }
+        .footer { background: #006747; color: white; text-align: center; padding: 30px; margin-top: 40px; }
+        .footer-logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <header class="header"><div class="logo">Big Cedar Invitational</div></header>
+    <nav class="nav-bar"><a href="../index.html">← Back to Tournament Home</a></nav>
+    <div class="container">
+        <div class="player-hero">
+            <div class="player-avatar">CP</div>
+            <div class="player-name">Cole Parton</div>
+            <div class="handicap-display">14.4</div>
+            <div class="handicap-label">Handicap Index</div>
+        </div>
+        <div class="section">
+            <div class="section-header">Tournament Info</div>
+            <div class="section-content">
+                <div class="info-row"><span class="info-label">Room Assignment</span><span>Falls Lodge — Room 3</span></div>
+                <div class="info-row"><span class="info-label">Tournament Role</span><span>Player</span></div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-header">Stats</div>
+            <div class="section-content">
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-value">—</div><div class="stat-label">Round 1</div></div>
+                    <div class="stat-box"><div class="stat-value">—</div><div class="stat-label">Round 2</div></div>
+                    <div class="stat-box"><div class="stat-value">—</div><div class="stat-label">Round 3</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="footer"><div class="footer-logo">Big Cedar Invitational</div><p>March 20-22, 2026 • Big Cedar Lodge • Ridgedale, Missouri</p></footer>
+</body>
+</html>
