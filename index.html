@@ -74,6 +74,30 @@
             text-transform: uppercase;
         }
 
+        .countdown {
+            margin-top: 20px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .countdown-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            opacity: 0.9;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .countdown-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #ffb81c;
+        }
+
         .container {
             max-width: 1100px;
             margin: 0 auto;
@@ -430,6 +454,7 @@
         <h1 class="logo">Big Cedar Invitational</h1>
         <p class="subtitle">A Tradition Unlike Any Other</p>
         <div class="date-badge">March 20-22, 2026</div>
+        <div id="countdown" class="countdown"></div>
     </header>
 
     <div class="container">
@@ -630,6 +655,41 @@
             </div>
         </section>
 
+        <!-- Dining Reservations -->
+        <section class="section">
+            <div class="section-header">
+                Dining Reservations
+            </div>
+            <div class="section-content">
+                <div class="tee-times">
+                    <div class="tee-time">
+                        <div class="time">Fri</div>
+                        <div class="course-info">
+                            <div class="course-name">Devil's Pool</div>
+                            <div class="course-note">Dinner reservation — Friday night</div>
+                        </div>
+                        <div class="group-badge">Reserved</div>
+                    </div>
+                    <div class="tee-time">
+                        <div class="time">Sat</div>
+                        <div class="course-info">
+                            <div class="course-name">Arnie's Barn</div>
+                            <div class="course-note">Dinner reservation — Saturday night</div>
+                        </div>
+                        <div class="group-badge">Reserved</div>
+                    </div>
+                    <div class="tee-time">
+                        <div class="time">Sun</div>
+                        <div class="course-info">
+                            <div class="course-name">The Clubhouse</div>
+                            <div class="course-note">Lunch after the round — Sunday (no reservation needed)</div>
+                        </div>
+                        <div class="group-badge">Walk-in</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Courses -->
         <section class="section">
             <div class="section-header">
@@ -736,7 +796,7 @@
                     <div class="player-card">
                         <div class="player-avatar avatar-burke">BE</div>
                         <div class="player-name">Burke Estes</div>
-                        <div class="handicap-display">?</div>
+                        <div class="handicap-display">22.9</div>
                         <div class="handicap-label">Handicap Index</div>
                     </div>
                     </a>
@@ -754,5 +814,27 @@
             <a href="https://github.com/hulohot/big-cedar-invitational" style="color: #ffb81c; text-decoration: none;">View on GitHub</a>
         </p>
     </footer>
+
+    <script>
+        function updateCountdown() {
+            const eventDate = new Date('March 20, 2026 00:00:00').getTime();
+            const now = new Date().getTime();
+            const distance = eventDate - now;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+
+            const countdownEl = document.getElementById('countdown');
+            if (distance < 0) {
+                countdownEl.innerHTML = '<span class="countdown-label">The Tradition Has Begun</span>';
+            } else {
+                countdownEl.innerHTML = 
+                    '<span class="countdown-label">Countdown to the First Tee</span>' +
+                    '<span class="countdown-number">' + days + '</span> day' + (days !== 1 ? 's' : '');
+            }
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 86400000);
+    </script>
 </body>
 </html>
