@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Market - Big Cedar Invitational</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: #f5f5f0;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #006747 0%, #004d35 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-bar {
+            background: #004d35;
+            padding: 15px 30px;
+        }
+
+        .nav-bar a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-bar a:hover {
+            color: #ffb81c;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .market-section {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* Kalshi Prediction Market */
+        .kalshi-market {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .kalshi-header {
+            background: #1a1a1a;
+            color: white;
+            padding: 25px 30px;
+            border-bottom: 3px solid #00d084;
+        }
+
+        .kalshi-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .kalshi-subtitle {
+            font-size: 0.95rem;
+            color: #888;
+        }
+
+        .kalshi-total {
+            display: inline-block;
+            background: #333;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+
+        .kalshi-total.valid {
+            background: #00d084;
+            color: #1a1a1a;
+        }
+
+        .kalshi-contracts {
+            padding: 0;
+        }
+
+        .kalshi-contract {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            align-items: center;
+            padding: 18px 30px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .kalshi-contract:hover {
+            background: #f9f9f7;
+        }
+
+        .kalshi-contract:last-child {
+            border-bottom: none;
+        }
+
+        .kalshi-player {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .kalshi-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .kalshi-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .kalshi-odds {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .kalshi-odds-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .kalshi-price {
+            text-align: center;
+        }
+
+        .kalshi-price-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            font-family: 'Source Sans Pro', monospace;
+        }
+
+        .kalshi-price-value.up {
+            color: #00d084;
+        }
+
+        .kalshi-price-value.down {
+            color: #ff4757;
+        }
+
+        .kalshi-change {
+            font-size: 0.85rem;
+            margin-top: 3px;
+        }
+
+        .kalshi-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .kalshi-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .kalshi-btn.buy {
+            background: #00d084;
+            color: #1a1a1a;
+        }
+
+        .kalshi-btn.buy:hover {
+            background: #00b874;
+        }
+
+        .kalshi-btn.sell {
+            background: #ff4757;
+            color: white;
+        }
+
+        .kalshi-btn.sell:hover {
+            background: #ff3344;
+        }
+
+        .kalshi-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 45px;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        .kalshi-bar {
+            width: 4px;
+            background: #e0e0e0;
+            border-radius: 1px;
+            transition: all 0.3s;
+        }
+
+        .kalshi-bar.up {
+            background: #00d084;
+        }
+
+        .kalshi-bar.down {
+            background: #ff4757;
+        }
+
+        .kalshi-disclaimer {
+            background: #f9f9f7;
+            padding: 20px 30px;
+            font-size: 0.85rem;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            line-height: 1.7;
+        }
+
+        .portfolio-section {
+            background: white;
+            margin-top: 30px;
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .portfolio-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            color: #006747;
+            margin-bottom: 15px;
+        }
+
+        .portfolio-empty {
+            color: #888;
+            font-style: italic;
+        }
+
+        .footer {
+            background: #1a1a1a;
+            color: #888;
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.9rem;
+            margin-top: 40px;
+        }
+
+        .footer-logo {
+            font-family: 'Playfair Display', serif;
+            color: #006747;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">Big Cedar Invitational</div>
+        <div class="subtitle">Kalshi-Style Prediction Market</div>
+    </header>
+
+    <nav class="nav-bar">
+        <a href="index.html">← Back to Tournament Home</a>
+    </nav>
+
+    <div class="container">
+        <div class="market-section">
+            <div class="kalshi-market">
+                <div class="kalshi-header">
+                    <div class="kalshi-title">🏆 Best Overall Player</div>
+                    <div class="kalshi-subtitle">Who will win the Big Cedar Invitational?</div>
+                    <div id="market-total" class="kalshi-total">Total Probability: 100%</div>
+                </div>
+                
+                <div id="kalshi-contracts" class="kalshi-contracts">
+                    <!-- Contracts generated by JS -->
+                </div>
+                
+                <div class="kalshi-disclaimer">
+                    <strong>Kalshi-style Event Contracts</strong> — Prices represent implied probability of winning. 
+                    Sum of all prices equals $1.00 (100%). Buy shares if you think the probability is undervalued. 
+                    Settlement: $1.00 per share if player wins, $0.00 if they lose. 
+                    <em>This is a simulated market for entertainment purposes only.</em>
+                </div>
+            </div>
+        </div>
+
+        <div class="portfolio-section">
+            <div class="portfolio-title">📊 Your Portfolio</div>
+            <div id="portfolio-content" class="portfolio-empty">
+                Start trading to build your portfolio. Buy shares in players you think are undervalued!
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-logo">Big Cedar Invitational</div>
+        <p>March 20-22, 2026 • Big Cedar Lodge • Ridgedale, Missouri</p>
+        <p style="margin-top: 10px; font-size: 0.8rem; opacity: 0.7;">"A Tradition Unlike Any Other"</p>
+    </footer>
+
+    <script>
+        const players = [
+            { name: 'Thomas Reynolds', initials: 'TR', avatarClass: 'avatar-thomas', color: '#1a5f4a' },
+            { name: 'Justin Settlemoir', initials: 'JS', avatarClass: 'avatar-justin', color: '#d4af37' },
+            { name: 'Cole Parton', initials: 'CP', avatarClass: 'avatar-cole', color: '#ffb81c' },
+            { name: 'Ethan Brugger', initials: 'EB', avatarClass: 'avatar-ethan', color: '#006747' },
+            { name: 'Conrad Murray', initials: 'CM', avatarClass: 'avatar-conrad', color: '#5c8a6e' },
+            { name: 'Garrett Story', initials: 'GS', avatarClass: 'avatar-garrett', color: '#4a7c59' },
+            { name: 'Dylan Huber', initials: 'DH', avatarClass: 'avatar-dylan', color: '#2d5016' },
+            { name: 'Burke Estes', initials: 'BE', avatarClass: 'avatar-burke', color: '#6b8e23' }
+        ];
+
+        let marketPrices = generateRandomPrices(players.length);
+        let priceHistory = players.map(() => Array(20).fill(0.125));
+        let portfolio = {};
+        let cash = 1000.00;
+
+        function generateRandomPrices(n) {
+            let randoms = Array(n).fill(0).map(() => Math.random());
+            let sum = randoms.reduce((a, b) => a + b, 0);
+            return randoms.map(r => r / sum);
+        }
+
+        function updateMarket() {
+            const fluctuationRange = 0.03;
+            
+            marketPrices = marketPrices.map(price => {
+                const change = (Math.random() - 0.5) * fluctuationRange;
+                let newPrice = price + change;
+                return Math.max(0.01, Math.min(0.99, newPrice));
+            });
+
+            const sum = marketPrices.reduce((a, b) => a + b, 0);
+            marketPrices = marketPrices.map(p => p / sum);
+
+            marketPrices.forEach((price, i) => {
+                priceHistory[i].shift();
+                priceHistory[i].push(price);
+            });
+
+            renderMarket();
+        }
+
+        function renderMarket() {
+            const container = document.getElementById('kalshi-contracts');
+            const totalEl = document.getElementById('market-total');
+            
+            const totalProb = marketPrices.reduce((a, b) => a + b, 0);
+            totalEl.textContent = `Total Probability: ${(totalProb * 100).toFixed(1)}%`;
+            totalEl.className = 'kalshi-total ' + (Math.abs(totalProb - 1.0) < 0.01 ? 'valid' : '');
+
+            container.innerHTML = players.map((player, i) => {
+                const price = marketPrices[i];
+                const prevPrice = priceHistory[i][priceHistory[i].length - 2] || price;
+                const change = price - prevPrice;
+                const changePct = (change / prevPrice) * 100;
+                const isUp = change >= 0;
+                const odds = Math.round((1 / price));
+                const holdings = portfolio[player.name] || 0;
+
+                const chartBars = priceHistory[i].map((p, idx) => {
+                    const barHeight = Math.max(10, (p / Math.max(...priceHistory[i])) * 100);
+                    const barClass = idx > 0 && p >= priceHistory[i][idx - 1] ? 'up' : 'down';
+                    return `<div class="kalshi-bar ${barClass}" style="height: ${barHeight}%"></div>`;
+                }).join('');
+
+                return `
+                    <div class="kalshi-contract">
+                        <div class="kalshi-player">
+                            <div class="kalshi-avatar" style="background: ${player.color}">${player.initials}</div>
+                            <div class="kalshi-name">${player.name}${holdings > 0 ? ` <span style="color: #00d084">(${holdings})</span>` : ''}</div>
+                        </div>
+                        <div class="kalshi-odds">
+                            <div class="kalshi-odds-value">${odds}:1</div>
+                            <div>Implied Odds</div>
+                        </div>
+                        <div class="kalshi-price">
+                            <div class="kalshi-price-value ${isUp ? 'up' : 'down'}">$${price.toFixed(2)}</div>
+                            <div class="kalshi-change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${changePct.toFixed(1)}%</div>
+                        </div>
+                        <div class="kalshi-chart">${chartBars}</div>
+                        <div class="kalshi-actions">
+                            <button class="kalshi-btn buy" onclick="buyShares('${player.name}')">Buy</button>
+                            <button class="kalshi-btn sell" onclick="sellShares('${player.name}')">Sell</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderPortfolio();
+        }
+
+        function buyShares(playerName) {
+            const idx = players.findIndex(p => p.name === playerName);
+            if (idx === -1) return;
+            
+            const price = marketPrices[idx];
+            if (cash < price) {
+                alert('Insufficient funds!');
+                return;
+            }
+
+            cash -= price;
+            portfolio[playerName] = (portfolio[playerName] || 0) + 1;
+            
+            marketPrices[idx] = Math.min(0.99, marketPrices[idx] * 1.05);
+            const sum = marketPrices.reduce((a, b) => a + b, 0);
+            marketPrices = marketPrices.map(p => p / sum);
+            
+            renderMarket();
+        }
+
+        function sellShares(playerName) {
+            const idx = players.findIndex(p => p.name === playerName);
+            if (idx === -1) return;
+            
+            if (!portfolio[playerName] || portfolio[playerName] <= 0) {
+                alert('No shares to sell!');
+                return;
+            }
+
+            const price = marketPrices[idx];
+            cash += price;
+            portfolio[playerName]--;
+            
+            marketPrices[idx] = Math.max(0.01, marketPrices[idx] * 0.95);
+            const sum = marketPrices.reduce((a, b) => a + b, 0);
+            marketPrices = marketPrices.map(p => p / sum);
+            
+            renderMarket();
+        }
+
+        function renderPortfolio() {
+            const container = document.getElementById('portfolio-content');
+            const holdings = Object.entries(portfolio).filter(([_, count]) => count > 0);
+            
+            if (holdings.length === 0) {
+                container.innerHTML = 'Start trading to build your portfolio. Buy shares in players you think are undervalued!';
+                container.className = 'portfolio-empty';
+                return;
+            }
+
+            let portfolioValue = cash;
+            holdings.forEach(([name, count]) => {
+                const idx = players.findIndex(p => p.name === name);
+                portfolioValue += count * marketPrices[idx];
+            });
+
+            container.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <strong>Cash:</strong> $${cash.toFixed(2)}
+                    <span style="margin: 0 15px;">|</span>
+                    <strong>Portfolio Value:</strong> $${portfolioValue.toFixed(2)}
+                </div>
+                ${holdings.map(([name, count]) => {
+                    const idx = players.findIndex(p => p.name === name);
+                    const currentValue = count * marketPrices[idx];
+                    return `<div style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                        ${name}: ${count} share${count > 1 ? 's' : ''} @ $${marketPrices[idx].toFixed(2)} = $${currentValue.toFixed(2)}
+                    </div>`;
+                }).join('')}
+            `;
+            container.className = '';
+        }
+
+        renderMarket();
+        setInterval(updateMarket, 3000);
+    </script>
+</body>
+</html>
