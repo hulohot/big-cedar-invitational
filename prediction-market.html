@@ -212,12 +212,13 @@
                 </div>
             </div>
             <div class="trade-platform-logo">HuloPredict</div>
-            <div class="trade-toggle">
+            <div class="trade-toggle" id="tradeToggle">
                 <div class="toggle-container">
                     <button class="toggle-btn yes" id="yesBtn" onclick="setTradeType('yes')">Yes</button>
                     <button class="toggle-btn no" id="noBtn" onclick="setTradeType('no')">No</button>
                 </div>
             </div>
+            <div id="sellLabel" style="display: none; text-align: center; margin-bottom: 24px; color: #888; font-size: 14px;"></div>
             <div class="trade-amount-display">
                 <div class="trade-amount" id="tradeAmount">$0</div>
             </div>
@@ -574,9 +575,9 @@
             tradeAmount = 0;
             sellMode = false;
             maxSellShares = 0;
-            // Reset toggle button text
-            document.getElementById('yesBtn').textContent = 'Yes';
-            document.getElementById('noBtn').textContent = 'No';
+            // Restore toggle visibility
+            document.getElementById('tradeToggle').style.display = 'flex';
+            document.getElementById('sellLabel').style.display = 'none';
             document.getElementById('submitBtn').textContent = 'Review';
         }
         
@@ -757,28 +758,17 @@
             document.getElementById('tradePlayerName').textContent = playerName;
             document.getElementById('tradeAmount').textContent = '$0';
             
-            // Update toggle buttons for sell mode
-            const yesBtn = document.getElementById('yesBtn');
-            const noBtn = document.getElementById('noBtn');
-            
-            if (positionType === 'yes') {
-                yesBtn.textContent = 'Sell YES';
-                yesBtn.style.background = '#fff';
-                yesBtn.style.color = '#0a0a0f';
-                noBtn.textContent = 'Sell NO';
-                noBtn.style.background = 'transparent';
-                noBtn.style.color = '#888';
-            } else {
-                yesBtn.textContent = 'Sell YES';
-                yesBtn.style.background = 'transparent';
-                yesBtn.style.color = '#888';
-                noBtn.textContent = 'Sell NO';
-                noBtn.style.background = '#fff';
-                noBtn.style.color = '#0a0a0f';
-            }
+            // Hide toggle, show sell label
+            document.getElementById('tradeToggle').style.display = 'none';
+            const sellLabel = document.getElementById('sellLabel');
+            sellLabel.style.display = 'block';
+            sellLabel.textContent = positionType === 'yes' 
+                ? `Selling YES shares (${maxShares.toFixed(2)} available)`
+                : `Selling NO shares (${maxShares.toFixed(2)} available)`;
+            sellLabel.style.color = positionType === 'yes' ? '#00d084' : '#ff4757';
             
             updateSellDisplay();
-            document.getElementById('cashAvailable').textContent = `Max: ${maxShares.toFixed(2)} shares`;
+            document.getElementById('cashAvailable').textContent = `Enter amount to sell`;
             document.getElementById('submitBtn').textContent = 'Sell';
             document.getElementById('tradeModal').classList.add('active');
             document.body.classList.add('modal-open');
