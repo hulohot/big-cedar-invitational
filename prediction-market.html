@@ -249,8 +249,8 @@
     </div>
 
     <script>
-        const API_BASE = 'https://c413-72-204-20-47.ngrok-free.app';
-        const WS_URL = 'wss://c413-72-204-20-47.ngrok-free.app';
+        const API_BASE = window.location.origin;
+        const WS_URL = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host;
         
         let players = [];
         let portfolio = {};
