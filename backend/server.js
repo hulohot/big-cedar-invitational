@@ -21,9 +21,9 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// CORS - only allow your local network
+// CORS - allow GitHub Pages and local network
 app.use(cors({
-    origin: ['http://192.168.5.208:8082', 'http://localhost:8082', 'http://localhost:3000'],
+    origin: ['http://192.168.5.208:8082', 'http://localhost:8082', 'http://localhost:3000', 'https://hulohot.github.io', 'https://9ee7-72-204-20-47.ngrok-free.app'],
     methods: ['GET', 'POST'],
     credentials: true
 }));
@@ -173,12 +173,6 @@ function broadcastTrade(tradeResult, userId, playerName, tradeType, amount) {
         }
     });
 }
-
-// Update prices every 3 seconds
-setInterval(async () => {
-    await market.updatePrices();
-    broadcastUpdate();
-}, 3000);
 
 // Initialize and start
 async function start() {
