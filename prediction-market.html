@@ -2,646 +2,702 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prediction Market - Big Cedar Invitational</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Big Cedar Invitational - Prediction Market</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #fff; min-height: 100vh; overflow-x: hidden; }
+        .header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1a1a2e; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-icon { width: 24px; height: 24px; color: #fff; opacity: 0.8; }
+        .title-section { padding: 16px; padding-bottom: 8px; }
+        .market-title { font-size: 28px; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
+        .kalshi-logo { color: #00d084; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+        .chart-section { padding: 0 16px; margin-bottom: 16px; }
+        .chart-container { position: relative; height: 200px; margin-bottom: 8px; }
+        .chart-labels-container { position: absolute; right: 16px; top: 0; bottom: 40px; display: flex; flex-direction: column; justify-content: space-around; pointer-events: none; }
+        .chart-label-item { text-align: right; }
+        .chart-label-name { font-size: 13px; font-weight: 500; }
+        .chart-label-percent { font-size: 28px; font-weight: 700; }
+        .stats-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #1a1a2e; }
+        .volume { font-size: 14px; color: #888; }
+        .time-tabs { display: flex; gap: 16px; align-items: center; }
+        .filter-btn { width: 24px; height: 24px; background: none; border: none; color: #fff; cursor: pointer; font-size: 16px; padding: 0; min-height: auto; }
+        .time-tab { font-size: 13px; color: #666; font-weight: 500; cursor: pointer; }
+        .time-tab.active { color: #fff; }
+        .time-tab.live { color: #00d084; }
+        .players-section { padding: 8px 0; }
+        .player-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #1a1a2e; }
+        .player-info { display: flex; flex-direction: column; gap: 4px; }
+        .player-name { font-size: 16px; font-weight: 500; color: #fff; }
+        .player-indicator { height: 3px; width: 40px; border-radius: 2px; margin-top: 2px; }
+        .player-stats { display: flex; align-items: center; gap: 8px; }
+        .score-box { display: flex; align-items: center; gap: 6px; background: #1a1a2e; padding: 6px 10px; border-radius: 6px; font-size: 13px; color: #888; }
+        .score-negative { color: #ff4757; }
+        .percent-pill { background: transparent; border: 1.5px solid #00d084; color: #00d084; padding: 8px 20px; border-radius: 20px; font-size: 15px; font-weight: 600; min-width: 70px; text-align: center; }
+        .events-section { padding: 20px 16px; }
+        .events-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+        .event-card { background: #1a1a2e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .event-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .event-name { font-size: 16px; font-weight: 600; }
+        .event-arrow { color: #666; font-size: 18px; }
+        .event-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+        .event-pill { background: #252540; border: 1px solid #333; padding: 8px 14px; border-radius: 20px; font-size: 13px; color: #fff; }
+        .portfolio-section { padding: 20px 16px; background: #0f0f16; border-top: 1px solid #1a1a2e; }
+        .portfolio-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+        .portfolio-empty { color: #666; font-size: 14px; padding: 12px 0; }
+        .holding-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1a1a2e; }
+        .holding-name { font-weight: 500; }
+        .holding-shares { color: #00d084; font-weight: 600; }
+        .trade-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0a0a0f; display: none; z-index: 3000; flex-direction: column; }
+        .trade-modal-overlay.active { display: flex; }
+        .trade-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #1a1a2e; }
+        .trade-modal-close { width: 40px; height: 40px; background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .currency-selector { background: #1a1a2e; border: 1px solid #333; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .trade-modal-content { flex: 1; display: flex; flex-direction: column; padding: 16px 20px; overflow-y: auto; }
+        .trade-player-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .trade-player-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #1a5f4a 0%, #006747 100%); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; }
+        .trade-event-info { flex: 1; }
+        .trade-event-name { font-size: 14px; color: #888; margin-bottom: 2px; }
+        .trade-player-name { font-size: 22px; font-weight: 600; }
+        .trade-platform-logo { text-align: center; color: #333; font-size: 13px; font-weight: 600; letter-spacing: 1px; margin-bottom: 20px; }
+        .trade-toggle { display: flex; justify-content: center; margin-bottom: 24px; }
+        .toggle-container { background: #1a1a2e; border-radius: 24px; padding: 4px; display: flex; gap: 4px; }
+        .toggle-btn { padding: 10px 28px; border-radius: 20px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .toggle-btn.yes { background: #fff; color: #0a0a0f; }
+        .toggle-btn.no { background: transparent; color: #888; }
+        .trade-amount-display { text-align: center; margin-bottom: 8px; }
+        .trade-amount { font-size: 56px; font-weight: 300; letter-spacing: -2px; line-height: 1; }
+        .trade-stats { text-align: center; color: #00d084; font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+        .trade-cash-available { text-align: center; color: #666; font-size: 13px; margin-bottom: 16px; }
+        .submit-btn { background: #00d084; color: #0a0a0f; border: none; padding: 16px 32px; border-radius: 28px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 16px; }
+        .submit-btn:disabled { background: #1a1a2e; color: #666; cursor: not-allowed; }
+        .submit-btn:active:not(:disabled) { background: #00b874; }
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #1a1a2e; border-radius: 12px; overflow: hidden; }
+        .numpad-btn { background: #0a0a0f; border: none; color: #fff; font-size: 24px; font-weight: 400; padding: 16px; cursor: pointer; min-height: 52px; }
+        .numpad-btn:active { background: #1a1a2e; }
+        .numpad-btn.backspace { font-size: 18px; }
+        .market-selector-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; z-index: 2000; align-items: flex-start; justify-content: center; padding-top: 120px; touch-action: none; }
+        .market-selector-modal.active { display: flex; }
+        body.modal-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        .market-selector-content { background: #1a1a2e; border-radius: 16px; width: 90%; max-width: 340px; max-height: 70vh; overflow-y: auto; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); -webkit-overflow-scrolling: touch; }
+        .market-selector-title { font-size: 15px; color: #888; margin-bottom: 16px; }
+        .market-option { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #252540; cursor: pointer; }
+        .market-option:last-child { border-bottom: none; }
+        .market-option-left { display: flex; align-items: center; gap: 12px; }
+        .market-checkbox { width: 22px; height: 22px; border: 2px solid #444; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: transparent; transition: all 0.2s; }
+        .market-checkbox.checked { background: #00d084; border-color: #00d084; }
+        .market-checkbox.checked::after { content: '✓'; color: #0a0a0f; font-size: 14px; font-weight: 700; }
+        .market-option-name { font-size: 16px; font-weight: 500; }
+        .market-option-percent { font-size: 16px; font-weight: 600; color: #fff; }
 
-        body {
-            font-family: 'Source Sans Pro', sans-serif;
-            background: #f5f5f0;
-            color: #1a1a1a;
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #006747 0%, #004d35 100%);
-            color: white;
-            padding: 40px 20px;
-            text-align: center;
-            position: relative;
-        }
-
-        .logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .nav-bar {
-            background: #004d35;
-            padding: 15px 30px;
-        }
-
-        .nav-bar a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .nav-bar a:hover {
-            color: #ffb81c;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        .market-section {
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-
-        /* Kalshi Prediction Market */
-        .kalshi-market {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .kalshi-header {
-            background: #1a1a1a;
-            color: white;
-            padding: 25px 30px;
-            border-bottom: 3px solid #00d084;
-        }
-
-        .kalshi-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.6rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .kalshi-subtitle {
-            font-size: 0.95rem;
-            color: #888;
-        }
-
-        .kalshi-total {
-            display: inline-block;
-            background: #333;
-            padding: 6px 14px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            margin-top: 12px;
-        }
-
-        .kalshi-total.valid {
-            background: #00d084;
-            color: #1a1a1a;
-        }
-
-        .kalshi-contracts {
-            padding: 0;
-        }
-
-        .kalshi-contract {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-            align-items: center;
-            padding: 18px 30px;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.2s;
-        }
-
-        .kalshi-contract:hover {
-            background: #f9f9f7;
-        }
-
-        .kalshi-contract:last-child {
-            border-bottom: none;
-        }
-
-        .kalshi-player {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .kalshi-avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Playfair Display', serif;
-            font-size: 1rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .kalshi-name {
-            font-weight: 600;
-            font-size: 1.05rem;
-        }
-
-        .kalshi-odds {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .kalshi-odds-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #1a1a1a;
-        }
-
-        .kalshi-price {
-            text-align: center;
-        }
-
-        .kalshi-price-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            font-family: 'Source Sans Pro', monospace;
-        }
-
-        .kalshi-price-value.up {
-            color: #00d084;
-        }
-
-        .kalshi-price-value.down {
-            color: #ff4757;
-        }
-
-        .kalshi-change {
-            font-size: 0.85rem;
-            margin-top: 3px;
-        }
-
-        .kalshi-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .kalshi-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .kalshi-btn.buy {
-            background: #00d084;
-            color: #1a1a1a;
-        }
-
-        .kalshi-btn.buy:hover {
-            background: #00b874;
-        }
-
-        .kalshi-btn.sell {
-            background: #ff4757;
-            color: white;
-        }
-
-        .kalshi-btn.sell:hover {
-            background: #ff3344;
-        }
-
-        .kalshi-chart {
-            display: flex;
-            align-items: flex-end;
-            height: 45px;
-            gap: 2px;
-            justify-content: center;
-        }
-
-        .kalshi-bar {
-            width: 4px;
-            background: #e0e0e0;
-            border-radius: 1px;
-            transition: all 0.3s;
-        }
-
-        .kalshi-bar.up {
-            background: #00d084;
-        }
-
-        .kalshi-bar.down {
-            background: #ff4757;
-        }
-
-        .kalshi-disclaimer {
-            background: #f9f9f7;
-            padding: 20px 30px;
-            font-size: 0.85rem;
-            color: #666;
-            border-top: 1px solid #e0e0e0;
-            line-height: 1.7;
-        }
-
-        .chart-section {
-            background: white;
-            margin-bottom: 30px;
-            padding: 25px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-
-        .chart-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.3rem;
-            color: #006747;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
-
-        .portfolio-section {
-            background: white;
-            margin-top: 30px;
-            padding: 25px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-
-        .portfolio-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.3rem;
-            color: #006747;
-            margin-bottom: 15px;
-        }
-
-        .portfolio-empty {
-            color: #888;
-            font-style: italic;
-        }
-
-        .footer {
-            background: #1a1a1a;
-            color: #888;
-            text-align: center;
-            padding: 40px 20px;
-            font-size: 0.9rem;
-            margin-top: 40px;
-        }
-
-        .footer-logo {
-            font-family: 'Playfair Display', serif;
-            color: #006747;
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-        }
+        /* Trade Feed Accordion */
+        .trade-feed-section { background: #0f0f16; border-top: 1px solid #1a1a2e; margin-top: 8px; }
+        .trade-feed-header { display: flex; align-items: center; justify-content: space-between; padding: 16px; cursor: pointer; transition: background 0.2s; }
+        .trade-feed-header:active { background: #1a1a2e; }
+        .trade-feed-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; color: #fff; }
+        .trade-feed-icon { width: 20px; height: 20px; color: #00d084; }
+        .trade-feed-badge { background: #00d084; color: #0a0a0f; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 4px; }
+        .trade-feed-arrow { width: 20px; height: 20px; color: #666; transition: transform 0.3s; }
+        .trade-feed-arrow.open { transform: rotate(180deg); }
+        .trade-feed-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .trade-feed-content.open { max-height: 500px; }
+        .trade-feed-list { padding: 0 16px 16px; }
+        .trade-feed-empty { text-align: center; color: #666; font-size: 14px; padding: 20px; }
+        .trade-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1a1a2e; animation: slideIn 0.3s ease; }
+        .trade-item:first-child { border-top: 1px solid #1a1a2e; }
+        .trade-item:last-child { border-bottom: none; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .trade-info { display: flex; flex-direction: column; gap: 2px; }
+        .trade-player { font-size: 14px; font-weight: 500; color: #fff; }
+        .trade-meta { font-size: 12px; color: #666; }
+        .trade-amount { text-align: right; }
+        .trade-value { font-size: 14px; font-weight: 600; color: #00d084; }
+        .trade-type { font-size: 11px; color: #888; text-transform: uppercase; }
+        .trade-type.sell { color: #ff4757; }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="logo">Big Cedar Invitational</div>
-        <div class="subtitle">Kalshi-Style Prediction Market</div>
-    </header>
-
-    <nav class="nav-bar">
-        <a href="index.html">← Back to Tournament Home</a>
-    </nav>
-
-    <div class="container">
-        <div class="chart-section">
-            <div class="chart-title">📊 Price History — All Players</div>
-            <div class="chart-container">
-                <canvas id="marketChart"></canvas>
+    <div class="header">
+        <div class="header-left"><a href="index.html" class="back-btn">←</a></div>
+        <div class="header-right">
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+    </div>
+    
+    <div class="title-section">
+        <h1 class="market-title">Big Cedar Invitational Winner?</h1>
+        <div class="kalshi-logo">HuloPredict</div>
+    </div>
+    
+    <div class="chart-section">
+        <div class="chart-container">
+            <canvas id="marketChart"></canvas>
+            <div class="chart-labels-container" id="chartLabels"></div>
+        </div>
+    </div>
+    
+    <div class="stats-bar">
+        <div class="volume" id="volume">$12,450 vol</div>
+        <div class="time-tabs">
+            <span class="time-tab live active">LIVE</span>
+            <button class="filter-btn" onclick="openMarketSelector()">☰</button>
+        </div>
+    </div>
+    
+    <div class="players-section" id="playersList"></div>
+    
+    <div class="events-section">
+        <h2 class="events-title">Events</h2>
+        <div class="event-card">
+            <div class="event-header">
+                <span class="event-name">Finishing Position</span>
+                <span class="event-arrow">⌄</span>
+            </div>
+            <div class="event-pills">
+                <span class="event-pill">Top 4 Finish</span>
+                <span class="event-pill">Top 2 Finish</span>
+                <span class="event-pill">Winner</span>
             </div>
         </div>
-
-        <div class="market-section">
-            <div class="kalshi-market">
-                <div class="kalshi-header">
-                    <div class="kalshi-title">🏆 Best Overall Player</div>
-                    <div class="kalshi-subtitle">Who will win the Big Cedar Invitational?</div>
-                    <div id="market-total" class="kalshi-total">Total Probability: 100%</div>
-                </div>
-                
-                <div id="kalshi-contracts" class="kalshi-contracts">
-                    <!-- Contracts generated by JS -->
-                </div>
-                
-                <div class="kalshi-disclaimer">
-                    <strong>Kalshi-style Event Contracts</strong> — Prices represent implied probability of winning. 
-                    Sum of all prices equals $1.00 (100%). Buy shares if you think the probability is undervalued. 
-                    Settlement: $1.00 per share if player wins, $0.00 if they lose. 
-                    <em>This is a simulated market for entertainment purposes only.</em>
-                </div>
+    </div>
+    
+    <!-- Trade Feed Accordion -->
+    <div class="trade-feed-section" id="tradeFeedSection">
+        <div class="trade-feed-header" onclick="toggleTradeFeed()">
+            <div class="trade-feed-title">
+                <svg class="trade-feed-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"></polyline>
+                </svg>
+                Live Trades
+                <span class="trade-feed-badge" id="tradeFeedBadge">0</span>
             </div>
+            <svg class="trade-feed-arrow" id="tradeFeedArrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
         </div>
-
-        <div class="portfolio-section">
-            <div class="portfolio-title">📊 Your Portfolio</div>
-            <div id="portfolio-content" class="portfolio-empty">
-                Start trading to build your portfolio. Buy shares in players you think are undervalued!
+        <div class="trade-feed-content" id="tradeFeedContent">
+            <div class="trade-feed-list" id="tradeFeedList">
+                <div class="trade-feed-empty">No recent trades</div>
             </div>
         </div>
     </div>
 
-    <footer class="footer">
-        <div class="footer-logo">Big Cedar Invitational</div>
-        <p>March 20-22, 2026 • Big Cedar Lodge • Ridgedale, Missouri</p>
-        <p style="margin-top: 10px; font-size: 0.8rem; opacity: 0.7;">"A Tradition Unlike Any Other"</p>
-    </footer>
+    <div class="portfolio-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2 class="portfolio-title" style="margin: 0;">Your Portfolio</h2>
+            <button onclick="resetData()" style="background: transparent; border: 1px solid #333; color: #666; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">Reset</button>
+        </div>
+        <div id="portfolioContent">
+            <div class="portfolio-empty">Start trading to build your portfolio</div>
+        </div>
+    </div>
+    
+    <div class="trade-modal-overlay" id="tradeModal">
+        <div class="trade-modal-header">
+            <button class="trade-modal-close" onclick="closeTradeModal()">×</button>
+            <button class="currency-selector">Dollars ▼</button>
+        </div>
+        <div class="trade-modal-content">
+            <div class="trade-player-header">
+                <div class="trade-player-avatar" id="tradePlayerAvatar">TR</div>
+                <div class="trade-event-info">
+                    <div class="trade-event-name">Big Cedar Invitational Winner?</div>
+                    <div class="trade-player-name" id="tradePlayerName">Player Name</div>
+                </div>
+            </div>
+            <div class="trade-platform-logo">HuloPredict</div>
+            <div class="trade-toggle">
+                <div class="toggle-container">
+                    <button class="toggle-btn yes" id="yesBtn" onclick="setTradeType('yes')">Yes</button>
+                    <button class="toggle-btn no" id="noBtn" onclick="setTradeType('no')">No</button>
+                </div>
+            </div>
+            <div class="trade-amount-display">
+                <div class="trade-amount" id="tradeAmount">$0</div>
+            </div>
+            <div class="trade-stats" id="tradeStats">38% chance · 2.63x payout</div>
+            <div class="trade-cash-available" id="cashAvailable">$1000.00 cash available</div>
+            <button class="submit-btn" id="submitBtn" onclick="executeTrade()" disabled>Review</button>
+            <div class="numpad">
+                <button class="numpad-btn" onclick="pressKey('1')">1</button>
+                <button class="numpad-btn" onclick="pressKey('2')">2</button>
+                <button class="numpad-btn" onclick="pressKey('3')">3</button>
+                <button class="numpad-btn" onclick="pressKey('4')">4</button>
+                <button class="numpad-btn" onclick="pressKey('5')">5</button>
+                <button class="numpad-btn" onclick="pressKey('6')">6</button>
+                <button class="numpad-btn" onclick="pressKey('7')">7</button>
+                <button class="numpad-btn" onclick="pressKey('8')">8</button>
+                <button class="numpad-btn" onclick="pressKey('9')">9</button>
+                <button class="numpad-btn" onclick="pressKey('.')">.</button>
+                <button class="numpad-btn" onclick="pressKey('0')">0</button>
+                <button class="numpad-btn backspace" onclick="pressKey('backspace')">←</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="market-selector-modal" id="marketSelectorModal" onclick="closeMarketSelector(event)">
+        <div class="market-selector-content" onclick="event.stopPropagation()">
+            <div class="market-selector-title">Pick up to 4 markets</div>
+            <div id="marketSelectorList"></div>
+        </div>
+    </div>
 
     <script>
-        // Seeded Random Number Generator (Mulberry32)
-        // Hardcoded seed ensures ALL users see identical market movements
-        const MARKET_SEED = 0xB1C3D2026; // Big Cedar 2026 (valid hex seed)
+        const API_BASE = 'http://192.168.5.208:3000';
+        const WS_URL = 'ws://192.168.5.208:3000';
         
-        function mulberry32(seed) {
-            return function() {
-                let t = seed += 0x6D2B79F5;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        let players = [];
+        let portfolio = {};
+        let cash = 1000;
+        let selectedPlayer = null;
+        let priceHistory = [];
+        let chartInstance = null;
+        let selectedChartPlayers = ['Thomas Reynolds', 'Justin Settlemoir'];
+        let userId = localStorage.getItem('hulopredict_user_id');
+        let ws = null;
+
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('hulopredict_user_id', userId);
+        }
+
+        async function fetchInitialData() {
+            try {
+                const playersRes = await fetch(`${API_BASE}/api/players`);
+                const playersData = await playersRes.json();
+                players = playersData.players;
+
+                const portfolioRes = await fetch(`${API_BASE}/api/portfolio/${userId}`);
+                const portfolioData = await portfolioRes.json();
+                cash = portfolioData.cash;
+                
+                portfolio = {};
+                portfolioData.holdings.forEach(h => {
+                    portfolio[h.name] = {
+                        yesShares: h.yesShares || 0,
+                        noShares: h.noShares || 0
+                    };
+                });
+
+                const historyPromises = players.map(p => 
+                    fetch(`${API_BASE}/api/price-history/${encodeURIComponent(p.name)}`)
+                        .then(r => r.json())
+                        .then(d => d.history.map(h => h.percent / 100))
+                );
+                priceHistory = await Promise.all(historyPromises);
+
+                renderPlayers();
+                initChart();
+                updateChartLabels();
+                updateVolume();
+                updatePortfolioDisplay();
+                fetchRecentTrades();
+                connectWebSocket();
+            } catch (e) {
+                console.error("Failed to load market data:", e);
+                renderPlayers();
+            }
+        }
+
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            ws.onopen = () => console.log('Connected to Live Market');
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'market_update') {
+                    handleMarketUpdate(data.players);
+                } else if (data.type === 'trade_update') {
+                    updateTradeFromWebSocket(data.trade);
+                }
+            };
+            ws.onclose = () => {
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function handleMarketUpdate(updatedPlayers) {
+            players = updatedPlayers;
+            players.forEach((p, i) => {
+                const newPrice = p.percent / 100;
+                if (!priceHistory[i]) priceHistory[i] = [];
+                priceHistory[i].push(newPrice);
+                if (priceHistory[i].length > 50) priceHistory[i].shift();
+            });
+            renderPlayers();
+            updateChart();
+            updateChartLabels();
+            if (selectedPlayer) updatePayoutDisplay();
+        }
+
+        function renderPlayers() {
+            const container = document.getElementById('playersList');
+            if(!players.length) return;
+            container.innerHTML = players.map((p, i) => `
+                <div class="player-row" onclick="openTradeModal('${p.name}')">
+                    <div class="player-info">
+                        <div class="player-name">${p.name}</div>
+                        <div class="player-indicator" style="background: ${p.color}"></div>
+                    </div>
+                    <div class="player-stats">
+                        <div class="score-box">
+                            <span class="score-negative">${p.score}</span>
+                            <span>${p.holes}</span>
+                        </div>
+                        <div class="percent-pill">${p.percent}%</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function initChart() {
+            const ctx = document.getElementById('marketChart').getContext('2d');
+            const chartPlayers = players.filter(p => selectedChartPlayers.includes(p.name));
+            const colors = ['#00d084', '#3b82f6', '#d4af37', '#ff4757'];
+            
+            const datasets = chartPlayers.map((p, i) => {
+                const mainIndex = players.findIndex(mainP => mainP.name === p.name);
+                return {
+                    label: p.name,
+                    data: priceHistory[mainIndex] || [],
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                };
+            });
+
+            if (chartInstance) {
+                chartInstance.data.datasets = datasets;
+                chartInstance.update('none');
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: Array(50).fill(''), datasets: datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: { x: { display: false }, y: { display: false, min: 0, max: 0.5 } },
+                        animation: { duration: 0 }
+                    }
+                });
+            }
+        }
+
+        function openMarketSelector() {
+            renderMarketSelector();
+            document.getElementById('marketSelectorModal').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+        
+        function closeMarketSelector(e) {
+            if (!e || e.target.id === 'marketSelectorModal') {
+                document.getElementById('marketSelectorModal').classList.remove('active');
+                document.body.classList.remove('modal-open');
             }
         }
         
-        const seededRandom = mulberry32(MARKET_SEED);
-
-        const players = [
-            { name: 'Thomas Reynolds', initials: 'TR', avatarClass: 'avatar-thomas', color: '#1a5f4a' },
-            { name: 'Justin Settlemoir', initials: 'JS', avatarClass: 'avatar-justin', color: '#d4af37' },
-            { name: 'Cole Parton', initials: 'CP', avatarClass: 'avatar-cole', color: '#ffb81c' },
-            { name: 'Ethan Brugger', initials: 'EB', avatarClass: 'avatar-ethan', color: '#006747' },
-            { name: 'Conrad Murray', initials: 'CM', avatarClass: 'avatar-conrad', color: '#5c8a6e' },
-            { name: 'Garrett Story', initials: 'GS', avatarClass: 'avatar-garrett', color: '#4a7c59' },
-            { name: 'Dylan Huber', initials: 'DH', avatarClass: 'avatar-dylan', color: '#2d5016' },
-            { name: 'Burke Estes', initials: 'BE', avatarClass: 'avatar-burke', color: '#6b8e23' }
-        ];
-
-        let marketPrices = generateRandomPrices(players.length);
-        let priceHistory = players.map(() => Array(50).fill(0).map(() => seededRandom() * 0.2 + 0.05));
-        let portfolio = {};
-        let cash = 1000.00;
-
-        function generateRandomPrices(n) {
-            let randoms = Array(n).fill(0).map(() => seededRandom());
-            let sum = randoms.reduce((a, b) => a + b, 0);
-            return randoms.map(r => r / sum);
+        function renderMarketSelector() {
+            const container = document.getElementById('marketSelectorList');
+            container.innerHTML = players.map((p, i) => {
+                const isSelected = selectedChartPlayers.includes(p.name);
+                const checkboxClass = isSelected ? 'checked' : '';
+                return `
+                    <div class="market-option" onclick="toggleMarketSelection('${p.name}')">
+                        <div class="market-option-left">
+                            <div class="market-checkbox ${checkboxClass}"></div>
+                            <span class="market-option-name">${p.name}</span>
+                        </div>
+                        <span class="market-option-percent">${p.percent}%</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function toggleMarketSelection(playerName) {
+            const index = selectedChartPlayers.indexOf(playerName);
+            if (index > -1) {
+                if (selectedChartPlayers.length > 1) selectedChartPlayers.splice(index, 1);
+            } else {
+                if (selectedChartPlayers.length < 4) selectedChartPlayers.push(playerName);
+            }
+            renderMarketSelector();
+            updateChart();
+            updateChartLabels();
+        }
+        
+        function updateChart() { initChart(); }
+        
+        function updateChartLabels() {
+            const container = document.getElementById('chartLabels');
+            const colors = ['#00d084', '#3b82f6', '#d4af37', '#ff4757'];
+            const chartPlayers = selectedChartPlayers.map(name => players.find(p => p.name === name)).filter(p => p);
+            container.innerHTML = chartPlayers.map((p, i) => `
+                <div class="chart-label-item">
+                    <div class="chart-label-name" style="color: ${colors[i % colors.length]}">${p.name}</div>
+                    <div class="chart-label-percent" style="color: ${colors[i % colors.length]}">${p.percent}%</div>
+                </div>
+            `).join('');
         }
 
-        function updateMarket() {
-            const fluctuationRange = 0.03;
-            
-            marketPrices = marketPrices.map(price => {
-                const change = (seededRandom() - 0.5) * fluctuationRange;
-                let newPrice = price + change;
-                return Math.max(0.01, Math.min(0.99, newPrice));
-            });
+        let tradeAmount = 0;
+        let tradeType = 'yes';
+        let recentTrades = [];
+        let tradeFeedExpanded = false;
 
-            const sum = marketPrices.reduce((a, b) => a + b, 0);
-            marketPrices = marketPrices.map(p => p / sum);
-
-            marketPrices.forEach((price, i) => {
-                priceHistory[i].shift();
-                priceHistory[i].push(price);
-            });
-
-            renderMarket();
+        function toggleTradeFeed() {
+            tradeFeedExpanded = !tradeFeedExpanded;
+            const content = document.getElementById('tradeFeedContent');
+            const arrow = document.getElementById('tradeFeedArrow');
+            if (tradeFeedExpanded) {
+                content.classList.add('open');
+                arrow.classList.add('open');
+            } else {
+                content.classList.remove('open');
+                arrow.classList.remove('open');
+            }
         }
 
-        function renderMarket() {
-            const container = document.getElementById('kalshi-contracts');
-            const totalEl = document.getElementById('market-total');
-            
-            const totalProb = marketPrices.reduce((a, b) => a + b, 0);
-            totalEl.textContent = `Total Probability: ${(totalProb * 100).toFixed(1)}%`;
-            totalEl.className = 'kalshi-total ' + (Math.abs(totalProb - 1.0) < 0.01 ? 'valid' : '');
+        async function fetchRecentTrades() {
+            try {
+                const res = await fetch(`${API_BASE}/api/trades?limit=20`);
+                const data = await res.json();
+                recentTrades = data.trades || [];
+                renderTradeFeed();
+            } catch (e) {
+                console.error('Failed to fetch trades:', e);
+            }
+        }
 
-            container.innerHTML = players.map((player, i) => {
-                const price = marketPrices[i];
-                const prevPrice = priceHistory[i][priceHistory[i].length - 2] || price;
-                const change = price - prevPrice;
-                const changePct = (change / prevPrice) * 100;
-                const isUp = change >= 0;
-                const odds = Math.round((1 / price));
-                const holdings = portfolio[player.name] || 0;
+        function renderTradeFeed() {
+            const container = document.getElementById('tradeFeedList');
+            const badge = document.getElementById('tradeFeedBadge');
+            badge.textContent = recentTrades.length;
 
-                const chartBars = priceHistory[i].map((p, idx) => {
-                    const barHeight = Math.max(10, (p / Math.max(...priceHistory[i])) * 100);
-                    const barClass = idx > 0 && p >= priceHistory[i][idx - 1] ? 'up' : 'down';
-                    return `<div class="kalshi-bar ${barClass}" style="height: ${barHeight}%"></div>`;
-                }).join('');
+            if (recentTrades.length === 0) {
+                container.innerHTML = '<div class="trade-feed-empty">No recent trades</div>';
+                return;
+            }
+
+            container.innerHTML = recentTrades.map(trade => {
+                const isBuy = trade.type === 'buy' || trade.type === 'yes';
+                const typeClass = isBuy ? '' : 'sell';
+                const typeLabel = isBuy ? 'Buy' : 'Sell';
+                const amount = parseFloat(trade.amount).toFixed(0);
+                const time = new Date(trade.created_at || trade.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 return `
-                    <div class="kalshi-contract">
-                        <div class="kalshi-player">
-                            <div class="kalshi-avatar" style="background: ${player.color}">${player.initials}</div>
-                            <div class="kalshi-name">${player.name}${holdings > 0 ? ` <span style="color: #00d084">(${holdings})</span>` : ''}</div>
+                    <div class="trade-item">
+                        <div class="trade-info">
+                            <div class="trade-player">${trade.player_name}</div>
+                            <div class="trade-meta">${time} • ${trade.trader_id?.slice(0, 8) || 'Unknown'}</div>
                         </div>
-                        <div class="kalshi-odds">
-                            <div class="kalshi-odds-value">${odds}:1</div>
-                            <div>Implied Odds</div>
-                        </div>
-                        <div class="kalshi-price">
-                            <div class="kalshi-price-value ${isUp ? 'up' : 'down'}">$${price.toFixed(2)}</div>
-                            <div class="kalshi-change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${changePct.toFixed(1)}%</div>
-                        </div>
-                        <div class="kalshi-chart">${chartBars}</div>
-                        <div class="kalshi-actions">
-                            <button class="kalshi-btn buy" onclick="buyShares('${player.name}')">Buy</button>
-                            <button class="kalshi-btn sell" onclick="sellShares('${player.name}')">Sell</button>
+                        <div class="trade-amount">
+                            <div class="trade-value">$${amount}</div>
+                            <div class="trade-type ${typeClass}">${typeLabel}</div>
                         </div>
                     </div>
                 `;
             }).join('');
-
-            renderChart();
-            renderPortfolio();
         }
 
-        let marketChart = null;
+        function addTradeToFeed(trade) {
+            recentTrades.unshift(trade);
+            if (recentTrades.length > 20) {
+                recentTrades.pop();
+            }
+            renderTradeFeed();
+        }
 
-        function initChart() {
-            const ctx = document.getElementById('marketChart').getContext('2d');
-            
-            marketChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: Array(50).fill('').map((_, i) => `T-${50-i}`),
-                    datasets: players.map((player, i) => ({
-                        label: player.initials,
-                        data: [...priceHistory[i]],
-                        borderColor: player.color,
-                        backgroundColor: player.color + '20',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        fill: false
-                    }))
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 15,
-                                font: {
-                                    family: 'Source Sans Pro',
-                                    size: 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleFont: { family: 'Source Sans Pro' },
-                            bodyFont: { family: 'Source Sans Pro' },
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': $' + context.parsed.y.toFixed(3);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: false
-                        },
-                        y: {
-                            beginAtZero: true,
-                            max: 0.5,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toFixed(2);
-                                },
-                                font: { family: 'Source Sans Pro' }
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        }
+        function updateTradeFromWebSocket(tradeData) {
+            addTradeToFeed({
+                player_name: tradeData.player_name,
+                type: tradeData.type,
+                amount: tradeData.amount,
+                created_at: tradeData.timestamp,
+                trader_id: tradeData.trader_id
+            });
+        }
+        
+        function openTradeModal(playerName) {
+            selectedPlayer = playerName;
+            tradeAmount = 0;
+            tradeType = 'yes';
+            const player = players.find(p => p.name === playerName);
+            const initials = playerName.split(' ').map(n => n[0]).join('');
+            document.getElementById('tradePlayerAvatar').textContent = initials;
+            document.getElementById('tradePlayerAvatar').style.background = player.color;
+            document.getElementById('tradePlayerName').textContent = playerName;
+            document.getElementById('tradeAmount').textContent = '$0';
+            updatePayoutDisplay();
+            document.getElementById('cashAvailable').textContent = `$${cash.toFixed(2)} cash available`;
+            setTradeType('yes');
+            document.getElementById('tradeModal').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+        
+        function closeTradeModal() {
+            document.getElementById('tradeModal').classList.remove('active');
+            document.body.classList.remove('modal-open');
+            selectedPlayer = null;
+            tradeAmount = 0;
+        }
+        
+        function setTradeType(type) {
+            tradeType = type;
+            const yesBtn = document.getElementById('yesBtn');
+            const noBtn = document.getElementById('noBtn');
+            if (type === 'yes') {
+                yesBtn.style.background = '#fff'; yesBtn.style.color = '#0a0a0f';
+                noBtn.style.background = 'transparent'; noBtn.style.color = '#888';
+            } else {
+                noBtn.style.background = '#fff'; noBtn.style.color = '#0a0a0f';
+                yesBtn.style.background = 'transparent'; yesBtn.style.color = '#888';
+            }
+            updatePayoutDisplay();
+        }
+
+        function updatePayoutDisplay() {
+            const player = players.find(p => p.name === selectedPlayer);
+            if (!player) return;
+            const percent = tradeType === 'yes' ? player.percent : (100 - player.percent);
+            const payoutMult = percent > 0 ? (100 / percent) : 0;
+            const payout = tradeAmount > 0 ? (tradeAmount * payoutMult).toFixed(0) : 0;
+            document.getElementById('tradeStats').textContent = `$${payout} payout if right (${percent}% chance)`;
+        }
+        
+        function pressKey(key) {
+            let currentAmount = tradeAmount.toString();
+            if (key === 'backspace') {
+                currentAmount = currentAmount.slice(0, -1);
+                if (currentAmount === '' || currentAmount === '0') currentAmount = '0';
+            } else if (key === '.') {
+                if (!currentAmount.includes('.')) currentAmount += '.';
+            } else {
+                if (currentAmount === '0') currentAmount = key;
+                else currentAmount += key;
+            }
+            tradeAmount = parseFloat(currentAmount) || 0;
+            updateTradeDisplay();
+        }
+        
+        function updateTradeDisplay() {
+            document.getElementById('tradeAmount').textContent = '$' + tradeAmount.toLocaleString();
+            updatePayoutDisplay();
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) submitBtn.disabled = tradeAmount <= 0;
+        }
+        
+        async function executeTrade() {
+            if (!selectedPlayer || tradeAmount <= 0) return;
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Processing...";
+            try {
+                const res = await fetch(`${API_BASE}/api/trade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userId,
+                        playerName: selectedPlayer,
+                        tradeType: tradeType,
+                        amount: tradeAmount
+                    })
+                });
+                const result = await res.json();
+                if (result.error) {
+                    alert(result.error);
+                } else {
+                    cash = result.newCash;
+                    if (!portfolio[selectedPlayer]) {
+                        portfolio[selectedPlayer] = { yesShares: 0, noShares: 0 };
                     }
+                    if (tradeType === 'yes') {
+                        portfolio[selectedPlayer].yesShares = result.totalYesShares;
+                    } else {
+                        portfolio[selectedPlayer].noShares = result.totalNoShares;
+                    }
+                    alert(`Bought ${result.shares.toFixed(2)} ${tradeType.toUpperCase()} shares at $${result.price.toFixed(2)}`);
+                    closeTradeModal();
+                    updatePortfolioDisplay();
                 }
-            });
-        }
-
-        function updateChart() {
-            if (!marketChart) {
-                initChart();
-                return;
+            } catch (e) {
+                console.error("Trade failed:", e);
+                alert("Network error.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Review";
             }
-
-            marketChart.data.datasets.forEach((dataset, i) => {
-                dataset.data = [...priceHistory[i]];
-            });
-            marketChart.update('none');
         }
-
-        function renderChart() {
-            updateChart();
-        }
-
-        function buyShares(playerName) {
-            const idx = players.findIndex(p => p.name === playerName);
-            if (idx === -1) return;
-            
-            const price = marketPrices[idx];
-            if (cash < price) {
-                alert('Insufficient funds!');
-                return;
-            }
-
-            cash -= price;
-            portfolio[playerName] = (portfolio[playerName] || 0) + 1;
-            
-            marketPrices[idx] = Math.min(0.99, marketPrices[idx] * 1.05);
-            const sum = marketPrices.reduce((a, b) => a + b, 0);
-            marketPrices = marketPrices.map(p => p / sum);
-            
-            renderMarket();
-        }
-
-        function sellShares(playerName) {
-            const idx = players.findIndex(p => p.name === playerName);
-            if (idx === -1) return;
-            
-            if (!portfolio[playerName] || portfolio[playerName] <= 0) {
-                alert('No shares to sell!');
-                return;
-            }
-
-            const price = marketPrices[idx];
-            cash += price;
-            portfolio[playerName]--;
-            
-            marketPrices[idx] = Math.max(0.01, marketPrices[idx] * 0.95);
-            const sum = marketPrices.reduce((a, b) => a + b, 0);
-            marketPrices = marketPrices.map(p => p / sum);
-            
-            renderMarket();
-        }
-
-        function renderPortfolio() {
-            const container = document.getElementById('portfolio-content');
-            const holdings = Object.entries(portfolio).filter(([_, count]) => count > 0);
+        
+        function updatePortfolioDisplay() {
+            const container = document.getElementById('portfolioContent');
+            const holdings = Object.entries(portfolio).filter(([_, pos]) => pos.yesShares > 0.01 || pos.noShares > 0.01);
             
             if (holdings.length === 0) {
-                container.innerHTML = 'Start trading to build your portfolio. Buy shares in players you think are undervalued!';
-                container.className = 'portfolio-empty';
+                container.innerHTML = '<div class="portfolio-empty">Start trading to build your portfolio</div>';
                 return;
             }
-
-            let portfolioValue = cash;
-            holdings.forEach(([name, count]) => {
-                const idx = players.findIndex(p => p.name === name);
-                portfolioValue += count * marketPrices[idx];
+            
+            let totalValue = cash;
+            holdings.forEach(([name, pos]) => {
+                const player = players.find(p => p.name === name);
+                if (player) {
+                    const yesValue = pos.yesShares * (player.percent / 100);
+                    const noValue = pos.noShares * ((100 - player.percent) / 100);
+                    totalValue += yesValue + noValue;
+                }
             });
-
+            
             container.innerHTML = `
-                <div style="margin-bottom: 15px;">
-                    <strong>Cash:</strong> $${cash.toFixed(2)}
-                    <span style="margin: 0 15px;">|</span>
-                    <strong>Portfolio Value:</strong> $${portfolioValue.toFixed(2)}
+                <div style="color: #888; font-size: 14px; margin-bottom: 12px;">
+                    Cash: $${cash.toFixed(2)} | Total: $${totalValue.toFixed(2)}
                 </div>
-                ${holdings.map(([name, count]) => {
-                    const idx = players.findIndex(p => p.name === name);
-                    const currentValue = count * marketPrices[idx];
-                    return `<div style="padding: 8px 0; border-bottom: 1px solid #eee;">
-                        ${name}: ${count} share${count > 1 ? 's' : ''} @ $${marketPrices[idx].toFixed(2)} = $${currentValue.toFixed(2)}
-                    </div>`;
+                ${holdings.map(([name, pos]) => {
+                    const player = players.find(p => p.name === name);
+                    let positionHtml = '';
+                    if (pos.yesShares > 0.01) {
+                        positionHtml += `<div class="holding-shares" style="color: #00d084;">${pos.yesShares.toFixed(2)} YES</div>`;
+                    }
+                    if (pos.noShares > 0.01) {
+                        positionHtml += `<div class="holding-shares" style="color: #ff4757;">${pos.noShares.toFixed(2)} NO</div>`;
+                    }
+                    return `
+                        <div class="holding-row">
+                            <span class="holding-name">${name}</span>
+                            <div style="text-align: right;">${positionHtml}</div>
+                        </div>
+                    `;
                 }).join('')}
             `;
-            container.className = '';
+        }
+        
+        async function updateVolume() {
+            try {
+                const res = await fetch(`${API_BASE}/api/volume`);
+                const data = await res.json();
+                document.getElementById('volume').textContent = `$${Math.round(data.volume || 0).toLocaleString()} vol`;
+            } catch (e) {
+                document.getElementById('volume').textContent = '$0 vol';
+            }
+        }
+        
+        function resetData() {
+            if (confirm('Create new User ID?')) {
+                localStorage.removeItem('hulopredict_user_id');
+                location.reload();
+            }
         }
 
-        renderMarket();
-        setInterval(updateMarket, 3000);
+        fetchInitialData();
     </script>
 </body>
 </html>
