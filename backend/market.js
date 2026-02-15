@@ -27,13 +27,13 @@ class Market {
         if (dbPlayers.length === 0) {
             // Default initial players
             const defaultPlayers = [
-                { name: 'Thomas Reynolds', color: '#1a5f4a', percent: 38, score: -8, holes: 18 },
-                { name: 'Justin Settlemoir', color: '#d4af37', percent: 22, score: -6, holes: 18 },
-                { name: 'Cole Parton', color: '#ffb81c', percent: 15, score: -4, holes: 18 },
-                { name: 'Ethan Brugger', color: '#006747', percent: 12, score: -3, holes: 18 },
-                { name: 'Conrad Murray', color: '#5c8a6e', percent: 8, score: -2, holes: 18 },
-                { name: 'Garrett Story', color: '#4a7c59', percent: 3, score: -1, holes: 18 },
-                { name: 'Dylan Huber', color: '#2d5016', percent: 1, score: 0, holes: 18 },
+                { name: 'Thomas Reynolds', color: '#1a5f4a', percent: 30, score: -8, holes: 18 },
+                { name: 'Justin Settlemoir', color: '#d4af37', percent: 25, score: -6, holes: 18 },
+                { name: 'Ethan Brugger', color: '#006747', percent: 20, score: -3, holes: 18 },
+                { name: 'Tyler Estes', color: '#ffb81c', percent: 12, score: -2, holes: 18 },
+                { name: 'Jimmy Carter', color: '#5c8a6e', percent: 8, score: -1, holes: 18 },
+                { name: 'RJ Reynolds', color: '#4a7c59', percent: 3, score: 0, holes: 18 },
+                { name: 'Reid Estes', color: '#2d5016', percent: 1, score: 0, holes: 18 },
                 { name: 'Burke Estes', color: '#6b8e23', percent: 1, score: 0, holes: 18 }
             ];
             
