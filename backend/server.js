@@ -28,10 +28,13 @@ app.use(cors({
     credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - configured for local network use
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.ip || req.connection.remoteAddress
 });
 app.use('/api/', limiter);
 
