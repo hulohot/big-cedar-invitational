@@ -143,7 +143,7 @@
     </div>
     
     <div class="stats-bar">
-        <div class="volume" id="volume">$12,450 vol</div>
+        <div class="volume" id="volume">$0 vol</div>
         <div class="time-tabs">
             <span class="time-tab live active">LIVE</span>
             <button class="filter-btn" onclick="openMarketSelector()">☰</button>
@@ -261,6 +261,19 @@
         let selectedChartPlayers = ['Thomas Reynolds', 'Justin Settlemoir'];
         let userId = localStorage.getItem('hulopredict_user_id');
         let ws = null;
+        let isDemoMode = false;
+
+        // Demo data for when backend is unreachable
+        const demoPlayers = [
+            { name: 'Thomas Reynolds', percent: 25, score: -2, holes: 'F', color: '#00d084' },
+            { name: 'Justin Settlemoir', percent: 22, score: -1, holes: 'F', color: '#3b82f6' },
+            { name: 'Ethan Brugger', percent: 18, score: 0, holes: 'F', color: '#d4af37' },
+            { name: 'Tyler Estes', percent: 15, score: 1, holes: 'F', color: '#ff4757' },
+            { name: 'Jimmy Carter', percent: 10, score: 2, holes: 'F', color: '#9b59b6' },
+            { name: 'RJ Reynolds', percent: 5, score: 3, holes: 'F', color: '#e67e22' },
+            { name: 'Reid Estes', percent: 3, score: 4, holes: 'F', color: '#1abc9c' },
+            { name: 'Burke Estes', percent: 2, score: 5, holes: 'F', color: '#34495e' }
+        ];
 
         if (!userId) {
             userId = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -270,6 +283,7 @@
         async function fetchInitialData() {
             try {
                 const playersRes = await fetch(`${API_BASE}/api/players`);
+                if (!playersRes.ok) throw new Error('API unreachable');
                 const playersData = await playersRes.json();
                 players = playersData.players;
 
@@ -301,7 +315,16 @@
                 connectWebSocket();
             } catch (e) {
                 console.error("Failed to load market data:", e);
+                isDemoMode = true;
+                // Use demo data
+                players = demoPlayers;
+                priceHistory = players.map(() => Array(20).fill(0).map(() => 0.1 + Math.random() * 0.3));
                 renderPlayers();
+                initChart();
+                updateChartLabels();
+                updateVolume();
+                // Show demo mode indicator
+                document.getElementById('volume').innerHTML = '$0 vol <span style="color:#666;font-size:12px;">(demo)</span>';
             }
         }
 
@@ -598,6 +621,13 @@
         
         async function executeTrade() {
             if (!selectedPlayer || tradeAmount <= 0) return;
+            
+            if (isDemoMode) {
+                alert("Trading is disabled in demo mode. Connect to the backend server to trade.");
+                closeTradeModal();
+                return;
+            }
+            
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = "Processing...";
