@@ -620,10 +620,10 @@
         }
         
         function updateTradeDisplay() {
-            document.getElementById('tradeAmount').textContent = '$' + tradeAmount.toLocaleString();
             if (sellMode) {
                 updateSellDisplay();
             } else {
+                document.getElementById('tradeAmount').textContent = '$' + tradeAmount.toLocaleString();
                 updatePayoutDisplay();
             }
             const submitBtn = document.getElementById('submitBtn');
@@ -643,6 +643,16 @@
             submitBtn.disabled = true;
             submitBtn.textContent = sellMode ? "Selling..." : "Processing...";
             
+            // Calculate the dollar amount to send to API
+            let apiAmount = tradeAmount;
+            if (sellMode) {
+                // Convert shares to dollar amount for the API
+                const player = players.find(p => p.name === selectedPlayer);
+                const price = tradeType === 'sell_yes' ? (player.percent / 100) : ((100 - player.percent) / 100);
+                const sharesToSell = Math.min(tradeAmount, maxSellShares);
+                apiAmount = sharesToSell * price;
+            }
+            
             try {
                 const res = await fetch(`${API_BASE}/api/trade`, {
                     method: 'POST',
@@ -651,7 +661,7 @@
                         userId: userId,
                         playerName: selectedPlayer,
                         tradeType: tradeType,
-                        amount: tradeAmount
+                        amount: apiAmount
                     })
                 });
                 const result = await res.json();
@@ -756,7 +766,7 @@
             document.getElementById('tradePlayerAvatar').textContent = initials;
             document.getElementById('tradePlayerAvatar').style.background = player.color;
             document.getElementById('tradePlayerName').textContent = playerName;
-            document.getElementById('tradeAmount').textContent = '$0';
+            document.getElementById('tradeAmount').textContent = '0';
             
             // Hide toggle, show sell label
             document.getElementById('tradeToggle').style.display = 'none';
@@ -768,7 +778,7 @@
             sellLabel.style.color = positionType === 'yes' ? '#00d084' : '#ff4757';
             
             updateSellDisplay();
-            document.getElementById('cashAvailable').textContent = `Enter amount to sell`;
+            document.getElementById('cashAvailable').textContent = `Enter shares to sell`;
             document.getElementById('submitBtn').textContent = 'Sell';
             document.getElementById('tradeModal').classList.add('active');
             document.body.classList.add('modal-open');
@@ -779,11 +789,11 @@
             if (!player) return;
             
             const price = tradeType === 'sell_yes' ? (player.percent / 100) : ((100 - player.percent) / 100);
-            const shares = tradeAmount > 0 ? (tradeAmount / price) : 0;
-            const clampedShares = Math.min(shares, maxSellShares);
-            const actualProceeds = clampedShares * price;
+            const sharesToSell = Math.min(tradeAmount, maxSellShares);
+            const proceeds = sharesToSell * price;
             
-            document.getElementById('tradeStats').textContent = `Sell ${clampedShares.toFixed(2)} shares for $${actualProceeds.toFixed(2)}`;
+            document.getElementById('tradeAmount').textContent = sharesToSell.toLocaleString();
+            document.getElementById('tradeStats').textContent = `Sell ${sharesToSell.toFixed(2)} shares for $${proceeds.toFixed(2)}`;
         }
         
         async function updateVolume() {
