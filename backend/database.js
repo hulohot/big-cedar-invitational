@@ -218,6 +218,51 @@ class Database {
         });
     }
 
+    // Reduce portfolio when selling
+    reducePortfolio(userId, playerName, positionType, sharesToSell) {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT * FROM portfolios WHERE user_id = ? AND player_name = ?',
+                [userId, playerName],
+                (err, row) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    
+                    if (!row) {
+                        reject(new Error('No position found'));
+                        return;
+                    }
+                    
+                    let yesShares = row.yes_shares || 0;
+                    let noShares = row.no_shares || 0;
+                    let avgYesPrice = row.avg_yes_price || 0;
+                    let avgNoPrice = row.avg_no_price || 0;
+                    
+                    if (positionType === 'yes') {
+                        yesShares = Math.max(0, yesShares - sharesToSell);
+                        if (yesShares <= 0) avgYesPrice = 0;
+                    } else {
+                        noShares = Math.max(0, noShares - sharesToSell);
+                        if (noShares <= 0) avgNoPrice = 0;
+                    }
+                    
+                    this.db.run(
+                        `UPDATE portfolios 
+                         SET yes_shares = ?, no_shares = ?, avg_yes_price = ?, avg_no_price = ?, updated_at = CURRENT_TIMESTAMP
+                         WHERE user_id = ? AND player_name = ?`,
+                        [yesShares, noShares, avgYesPrice, avgNoPrice, userId, playerName],
+                        (err) => {
+                            if (err) reject(err);
+                            else resolve({ yesShares, noShares });
+                        }
+                    );
+                }
+            );
+        });
+    }
+
     // Trade operations
     recordTrade(userId, playerName, type, shares, price, amount) {
         return new Promise((resolve, reject) => {

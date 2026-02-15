@@ -572,6 +572,12 @@
             document.body.classList.remove('modal-open');
             selectedPlayer = null;
             tradeAmount = 0;
+            sellMode = false;
+            maxSellShares = 0;
+            // Reset toggle button text
+            document.getElementById('yesBtn').textContent = 'Yes';
+            document.getElementById('noBtn').textContent = 'No';
+            document.getElementById('submitBtn').textContent = 'Review';
         }
         
         function setTradeType(type) {
@@ -614,7 +620,11 @@
         
         function updateTradeDisplay() {
             document.getElementById('tradeAmount').textContent = '$' + tradeAmount.toLocaleString();
-            updatePayoutDisplay();
+            if (sellMode) {
+                updateSellDisplay();
+            } else {
+                updatePayoutDisplay();
+            }
             const submitBtn = document.getElementById('submitBtn');
             if (submitBtn) submitBtn.disabled = tradeAmount <= 0;
         }
@@ -630,7 +640,8 @@
             
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.textContent = "Processing...";
+            submitBtn.textContent = sellMode ? "Selling..." : "Processing...";
+            
             try {
                 const res = await fetch(`${API_BASE}/api/trade`, {
                     method: 'POST',
@@ -650,12 +661,25 @@
                     if (!portfolio[selectedPlayer]) {
                         portfolio[selectedPlayer] = { yesShares: 0, noShares: 0 };
                     }
-                    if (tradeType === 'yes') {
-                        portfolio[selectedPlayer].yesShares = result.totalYesShares;
+                    
+                    if (sellMode) {
+                        // Selling - reduce shares
+                        if (tradeType === 'sell_yes') {
+                            portfolio[selectedPlayer].yesShares = result.totalYesShares;
+                        } else {
+                            portfolio[selectedPlayer].noShares = result.totalNoShares;
+                        }
+                        alert(`Sold ${result.shares.toFixed(2)} shares for $${result.proceeds.toFixed(2)}`);
                     } else {
-                        portfolio[selectedPlayer].noShares = result.totalNoShares;
+                        // Buying - add shares
+                        if (tradeType === 'yes') {
+                            portfolio[selectedPlayer].yesShares = result.totalYesShares;
+                        } else {
+                            portfolio[selectedPlayer].noShares = result.totalNoShares;
+                        }
+                        alert(`Bought ${result.shares.toFixed(2)} ${tradeType.toUpperCase()} shares at $${result.price.toFixed(2)}`);
                     }
-                    alert(`Bought ${result.shares.toFixed(2)} ${tradeType.toUpperCase()} shares at $${result.price.toFixed(2)}`);
+                    
                     closeTradeModal();
                     updatePortfolioDisplay();
                 }
@@ -664,7 +688,7 @@
                 alert("Network error.");
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = "Review";
+                submitBtn.textContent = sellMode ? "Sell" : "Review";
             }
         }
         
@@ -701,13 +725,75 @@
                         positionHtml += `<div class="holding-shares" style="color: #ff4757;">${pos.noShares.toFixed(2)} NO</div>`;
                     }
                     return `
-                        <div class="holding-row">
-                            <span class="holding-name">${name}</span>
-                            <div style="text-align: right;">${positionHtml}</div>
+                        <div class="holding-row" style="align-items: center;">
+                            <div>
+                                <span class="holding-name">${name}</span>
+                                <div style="text-align: left;">${positionHtml}</div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                ${pos.yesShares > 0.01 ? `<button onclick="openSellModal('${name}', 'yes', ${pos.yesShares})" style="background: #00d084; color: #0a0a0f; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">Sell YES</button>` : ''}
+                                ${pos.noShares > 0.01 ? `<button onclick="openSellModal('${name}', 'no', ${pos.noShares})" style="background: #ff4757; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">Sell NO</button>` : ''}
+                            </div>
                         </div>
                     `;
                 }).join('')}
             `;
+        }
+        
+        let sellMode = false;
+        let maxSellShares = 0;
+        
+        function openSellModal(playerName, positionType, maxShares) {
+            sellMode = true;
+            selectedPlayer = playerName;
+            tradeAmount = 0;
+            maxSellShares = maxShares;
+            tradeType = positionType === 'yes' ? 'sell_yes' : 'sell_no';
+            
+            const player = players.find(p => p.name === playerName);
+            const initials = playerName.split(' ').map(n => n[0]).join('');
+            document.getElementById('tradePlayerAvatar').textContent = initials;
+            document.getElementById('tradePlayerAvatar').style.background = player.color;
+            document.getElementById('tradePlayerName').textContent = playerName;
+            document.getElementById('tradeAmount').textContent = '$0';
+            
+            // Update toggle buttons for sell mode
+            const yesBtn = document.getElementById('yesBtn');
+            const noBtn = document.getElementById('noBtn');
+            
+            if (positionType === 'yes') {
+                yesBtn.textContent = 'Sell YES';
+                yesBtn.style.background = '#fff';
+                yesBtn.style.color = '#0a0a0f';
+                noBtn.textContent = 'Sell NO';
+                noBtn.style.background = 'transparent';
+                noBtn.style.color = '#888';
+            } else {
+                yesBtn.textContent = 'Sell YES';
+                yesBtn.style.background = 'transparent';
+                yesBtn.style.color = '#888';
+                noBtn.textContent = 'Sell NO';
+                noBtn.style.background = '#fff';
+                noBtn.style.color = '#0a0a0f';
+            }
+            
+            updateSellDisplay();
+            document.getElementById('cashAvailable').textContent = `Max: ${maxShares.toFixed(2)} shares`;
+            document.getElementById('submitBtn').textContent = 'Sell';
+            document.getElementById('tradeModal').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+        
+        function updateSellDisplay() {
+            const player = players.find(p => p.name === selectedPlayer);
+            if (!player) return;
+            
+            const price = tradeType === 'sell_yes' ? (player.percent / 100) : ((100 - player.percent) / 100);
+            const shares = tradeAmount > 0 ? (tradeAmount / price) : 0;
+            const clampedShares = Math.min(shares, maxSellShares);
+            const actualProceeds = clampedShares * price;
+            
+            document.getElementById('tradeStats').textContent = `Sell ${clampedShares.toFixed(2)} shares for $${actualProceeds.toFixed(2)}`;
         }
         
         async function updateVolume() {

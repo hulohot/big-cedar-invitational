@@ -177,6 +177,74 @@ class Market {
                 totalYesShares: result.yesShares,
                 totalNoShares: result.noShares
             };
+        } else if (tradeType === 'sell_yes') {
+            // Sell YES shares at current YES price
+            const yesPrice = player.percent / 100;
+            const portfolio = await database.getPortfolio(userId);
+            const holding = portfolio.find(p => p.player_name === playerName);
+            
+            if (!holding || holding.yes_shares <= 0) {
+                throw new Error('No YES shares to sell');
+            }
+            
+            // Calculate shares to sell based on amount
+            let sharesToSell = amount / yesPrice;
+            if (sharesToSell > holding.yes_shares) {
+                sharesToSell = holding.yes_shares;
+            }
+            
+            const proceeds = sharesToSell * yesPrice;
+            const newCash = user.cash + proceeds;
+            await database.updateUserCash(userId, newCash);
+            
+            // Update portfolio - reduce YES shares
+            const result = await database.reducePortfolio(userId, playerName, 'yes', sharesToSell);
+            await database.recordTrade(userId, playerName, 'sell_yes', sharesToSell, yesPrice, proceeds);
+
+            return {
+                success: true,
+                tradeType: 'sell_yes',
+                shares: sharesToSell,
+                price: yesPrice,
+                proceeds: proceeds,
+                newCash: newCash,
+                totalYesShares: result.yesShares,
+                totalNoShares: result.noShares
+            };
+        } else if (tradeType === 'sell_no') {
+            // Sell NO shares at current NO price
+            const noPrice = (100 - player.percent) / 100;
+            const portfolio = await database.getPortfolio(userId);
+            const holding = portfolio.find(p => p.player_name === playerName);
+            
+            if (!holding || holding.no_shares <= 0) {
+                throw new Error('No NO shares to sell');
+            }
+            
+            // Calculate shares to sell based on amount
+            let sharesToSell = amount / noPrice;
+            if (sharesToSell > holding.no_shares) {
+                sharesToSell = holding.no_shares;
+            }
+            
+            const proceeds = sharesToSell * noPrice;
+            const newCash = user.cash + proceeds;
+            await database.updateUserCash(userId, newCash);
+            
+            // Update portfolio - reduce NO shares
+            const result = await database.reducePortfolio(userId, playerName, 'no', sharesToSell);
+            await database.recordTrade(userId, playerName, 'sell_no', sharesToSell, noPrice, proceeds);
+
+            return {
+                success: true,
+                tradeType: 'sell_no',
+                shares: sharesToSell,
+                price: noPrice,
+                proceeds: proceeds,
+                newCash: newCash,
+                totalYesShares: result.yesShares,
+                totalNoShares: result.noShares
+            };
         } else {
             throw new Error('Invalid trade type');
         }
