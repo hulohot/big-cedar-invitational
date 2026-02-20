@@ -409,6 +409,47 @@
             font-size: 0.95rem;
         }
 
+        .format-tip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: help;
+            border-bottom: 1px dashed #006747;
+            color: #006747;
+            font-weight: 600;
+        }
+
+        .format-tip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 0;
+            bottom: calc(100% + 10px);
+            width: min(420px, 80vw);
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 0.86rem;
+            line-height: 1.45;
+            white-space: pre-line;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(6px);
+            transition: all 0.18s ease;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        .format-tip:hover::after,
+        .format-tip:focus::after,
+        .format-tip:focus-visible::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
         /* Player Profiles */
         .players-grid {
             display: grid;
@@ -741,10 +782,28 @@
                 <div class="info-box" style="margin-top: 0;">
                     <h4>Weekend Format & Scoring (10 points total)</h4>
                     <ul style="margin: 10px 0 0 20px; line-height: 1.8; color: #333;">
-                        <li><strong>Friday — Buffalo Ridge (4-Man Shamble):</strong> Front 9 (1), Back 9 (1), Overall 18 (1)</li>
-                        <li><strong>Saturday — Payne's Valley (4-Man Best Ball):</strong> Front 9 (1), Back 9 (1), Overall 18 (1)</li>
-                        <li><strong>Cliffhangers Par 3 (Team Stableford):</strong> Birdie 3, Par 1, Bogey 0, Double+ -1, Winner gets 1 point</li>
-                        <li><strong>Sunday — Ozarks National (4-Man Scramble):</strong> Front 9 (1), Back 9 (1), Overall 18 (1)</li>
+                        <li><strong>Friday — Buffalo Ridge (<span class="format-tip" tabindex="0" title="All 4 players tee off. Team selects the best drive. Each player plays their own ball from that spot. Team score = lowest individual score on each hole." data-tooltip="Format: 4-Man Shamble
+All 4 players tee off
+Team selects the best drive
+Each player plays their own ball from that spot
+Team score = lowest individual score on each hole">4-Man Shamble ⓘ</span>):</strong> Front 9 (1), Back 9 (1), Overall 18 (1)</li>
+                        <li><strong>Saturday — Payne's Valley (<span class="format-tip" tabindex="0" title="Everyone plays their own ball. Team score = lowest individual score on each hole." data-tooltip="Format: 4-Man Best Ball
+Everyone plays their own ball
+Team score = lowest individual score on each hole">4-Man Best Ball ⓘ</span>):</strong> Front 9 (1), Back 9 (1), Overall 18 (1)</li>
+                        <li><strong>Cliffhangers Par 3 (<span class="format-tip" tabindex="0" title="Everyone plays their own ball. Team points are combined per hole. High score wins." data-tooltip="Format: Team Stableford
+Everyone plays their own ball
+Team points are combined per hole
+High score wins
+
+Scoring:
+Birdie = 3
+Par = 1
+Bogey = 0
+Double or worse = -1">Team Stableford ⓘ</span>):</strong> Birdie 3, Par 1, Bogey 0, Double+ -1, Winner gets 1 point</li>
+                        <li><strong>Sunday — Ozarks National (<span class="format-tip" tabindex="0" title="Each player hits, take the best shot, repeat until holed out." data-tooltip="Format: 4-Man Scramble
+Each player hits
+Take the best shot
+Repeat until holed out">4-Man Scramble ⓘ</span>):</strong> Front 9 (1), Back 9 (1), Overall 18 (1)</li>
                         <li><strong>Bonus points:</strong> 315+ yard drive (1), hole-out from &gt;15 yards with no putter (1)</li>
                     </ul>
                     <p style="margin-top: 12px; color: #555;"><strong>Most points wins the Branson Cup.</strong></p>
@@ -786,28 +845,46 @@
                                     <td>0</td>
                                     <td>0</td>
                                     <td>3</td>
-                                    <td>4-Man Shamble (Front 9 / Back 9 / 18 Overall)</td>
+                                    <td><span class="format-tip" tabindex="0" title="All 4 players tee off. Team selects the best drive. Each player plays their own ball from that spot. Team score = lowest individual score on each hole." data-tooltip="Format: 4-Man Shamble
+All 4 players tee off
+Team selects the best drive
+Each player plays their own ball from that spot
+Team score = lowest individual score on each hole">4-Man Shamble ⓘ</span> (Front 9 / Back 9 / 18 Overall)</td>
                                 </tr>
                                 <tr>
                                     <td>Saturday — Payne's Valley</td>
                                     <td>0</td>
                                     <td>0</td>
                                     <td>3</td>
-                                    <td>4-Man Best Ball (Front 9 / Back 9 / 18 Overall)</td>
+                                    <td><span class="format-tip" tabindex="0" title="Everyone plays their own ball. Team score = lowest individual score on each hole." data-tooltip="Format: 4-Man Best Ball
+Everyone plays their own ball
+Team score = lowest individual score on each hole">4-Man Best Ball ⓘ</span> (Front 9 / Back 9 / 18 Overall)</td>
                                 </tr>
                                 <tr>
                                     <td>Cliffhangers Par 3</td>
                                     <td>0</td>
                                     <td>0</td>
                                     <td>1</td>
-                                    <td>Team Stableford (Birdie 3, Par 1, Bogey 0, Double+ -1)</td>
+                                    <td><span class="format-tip" tabindex="0" title="Everyone plays their own ball. Team points are combined per hole. High score wins." data-tooltip="Format: Team Stableford
+Everyone plays their own ball
+Team points are combined per hole
+High score wins
+
+Scoring:
+Birdie = 3
+Par = 1
+Bogey = 0
+Double or worse = -1">Team Stableford ⓘ</span> (Birdie 3, Par 1, Bogey 0, Double+ -1)</td>
                                 </tr>
                                 <tr>
                                     <td>Sunday — Ozarks National</td>
                                     <td>0</td>
                                     <td>0</td>
                                     <td>3</td>
-                                    <td>4-Man Scramble (Front 9 / Back 9 / 18 Overall)</td>
+                                    <td><span class="format-tip" tabindex="0" title="Each player hits. Team selects the best shot. Repeat until holed out." data-tooltip="Format: 4-Man Scramble
+Each player hits
+Take the best shot
+Repeat until holed out">4-Man Scramble ⓘ</span> (Front 9 / Back 9 / 18 Overall)</td>
                                 </tr>
                                 <tr>
                                     <td>Bonus Points</td>
