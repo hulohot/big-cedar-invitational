@@ -332,6 +332,83 @@
             top: 2px;
         }
 
+        /* Branson Cup Live Layout */
+        .cup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .cup-card {
+            background: #f9f9f7;
+            border: 1px solid #ddd;
+            border-left: 4px solid #006747;
+            padding: 18px;
+        }
+
+        .cup-card-label {
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .cup-card-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #006747;
+            line-height: 1.2;
+        }
+
+        .cup-table-wrap {
+            margin-top: 20px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+
+        .cup-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 680px;
+            background: white;
+        }
+
+        .cup-table th {
+            background: #006747;
+            color: white;
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 0.86rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-right: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .cup-table td {
+            padding: 12px 14px;
+            border-top: 1px solid #e8e8e8;
+            color: #1f2937;
+        }
+
+        .cup-table tbody tr:nth-child(odd) {
+            background: #fcfcfa;
+        }
+
+        .cup-table .is-total td {
+            background: #f3f6f4;
+            font-weight: 700;
+            border-top: 2px solid #006747;
+        }
+
+        .cup-note {
+            margin-top: 14px;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
         /* Player Profiles */
         .players-grid {
             display: grid;
@@ -674,9 +751,83 @@
                 </div>
 
                 <div class="info-box" style="margin-top: 20px;">
-                    <h4>Live Scoreboard Preview (Team X vs Team Z)</h4>
-                    <p style="margin-bottom: 12px; color: #555;">This is the format we'll keep updated during the tournament.</p>
-                    <img src="images/branson-scoreboard-mock.png" alt="Branson Cup live scoreboard mock preview" style="width: 100%; border-radius: 8px; border: 1px solid #ddd;" />
+                    <h4>Live Branson Cup Standings</h4>
+                    <p style="margin-bottom: 12px; color: #555;">Real-time layout for tournament updates (currently initialized at 0–0).</p>
+
+                    <div class="cup-grid">
+                        <div class="cup-card">
+                            <div class="cup-card-label">Team X Total</div>
+                            <div class="cup-card-value">0 pts</div>
+                        </div>
+                        <div class="cup-card">
+                            <div class="cup-card-label">Team Z Total</div>
+                            <div class="cup-card-value">0 pts</div>
+                        </div>
+                        <div class="cup-card">
+                            <div class="cup-card-label">Current Leader</div>
+                            <div class="cup-card-value">Tied</div>
+                        </div>
+                    </div>
+
+                    <div class="cup-table-wrap">
+                        <table class="cup-table" aria-label="Branson Cup standings table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Team X</th>
+                                    <th>Team Z</th>
+                                    <th>Available</th>
+                                    <th>Format Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Friday — Buffalo Ridge</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>3</td>
+                                    <td>4-Man Shamble (Front 9 / Back 9 / 18 Overall)</td>
+                                </tr>
+                                <tr>
+                                    <td>Saturday — Payne's Valley</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>3</td>
+                                    <td>4-Man Best Ball (Front 9 / Back 9 / 18 Overall)</td>
+                                </tr>
+                                <tr>
+                                    <td>Cliffhangers Par 3</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>1</td>
+                                    <td>Team Stableford (Birdie 3, Par 1, Bogey 0, Double+ -1)</td>
+                                </tr>
+                                <tr>
+                                    <td>Sunday — Ozarks National</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>3</td>
+                                    <td>4-Man Scramble (Front 9 / Back 9 / 18 Overall)</td>
+                                </tr>
+                                <tr>
+                                    <td>Bonus Points</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>2</td>
+                                    <td>315+ yd drive (1), hole-out &gt;15 yds no putter (1)</td>
+                                </tr>
+                                <tr class="is-total">
+                                    <td>Total</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>10</td>
+                                    <td>Most points wins the Branson Cup</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="cup-note">Send updates by event and team, and standings can be updated immediately.</p>
                 </div>
             </div>
         </section>
