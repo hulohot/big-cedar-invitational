@@ -3,3 +3,7 @@ Database tables initialized
 Market initialized with 8 players
 HuloPredict server running on http://0.0.0.0:3000
 WebSocket server ready for real-time updates
+New WebSocket connection from 192.168.5.18
+WebSocket disconnected
+New WebSocket connection from 192.168.5.18
+WebSocket disconnected

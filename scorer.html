@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Uploader - Big Cedar Invitational</title>
+    <script src='https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: #f5f5f0;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, #006747 0%, #004d35 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .header p { opacity: 0.9; }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .upload-zone {
+            border: 3px dashed #006747;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            background: #f0f7f4;
+            border-color: #ffb81c;
+        }
+        .upload-zone .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        .upload-zone h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: #006747;
+            margin-bottom: 10px;
+        }
+        .upload-zone p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+        .btn {
+            display: inline-block;
+            background: #006747;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover { background: #004d35; }
+        .btn-secondary {
+            background: #666;
+        }
+        .btn-secondary:hover { background: #444; }
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .processing.active { display: block; }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #006747;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .results {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        .results.active { display: block; }
+        .results h3 {
+            font-family: 'Playfair Display', serif;
+            color: #006747;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .extracted-text {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .score-form {
+            margin-top: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #006747;
+        }
+        .holes-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .hole-input {
+            text-align: center;
+        }
+        .hole-input label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #006747;
+            margin-bottom: 5px;
+        }
+        .hole-input input {
+            width: 100%;
+            padding: 10px 5px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+        .hole-input input:focus {
+            outline: none;
+            border-color: #ffb81c;
+        }
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        .leaderboard {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+        .leaderboard h3 {
+            font-family: 'Playfair Display', serif;
+            color: #006747;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .leaderboard-table th {
+            font-weight: 600;
+            color: #006747;
+            background: #f0f7f4;
+        }
+        .leaderboard-table tr:hover {
+            background: #f8f8f8;
+        }
+        .score-cell {
+            font-weight: 600;
+        }
+        .score-good { color: #006747; }
+        .score-bad { color: #c41e3a; }
+        .score-par { color: #333; }
+        .total-score {
+            font-weight: 700;
+            color: #006747;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-complete { background: #d4edda; color: #155724; }
+        @media (max-width: 600px) {
+            .holes-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏌️ Score Uploader</h1>
+        <p>Screenshot your 18 Birdies scorecard → Upload → Done</p>
+    </div>
+
+    <div class="container">
+        <div class="upload-zone" id="uploadZone">
+            <div class="icon">📸</div>
+            <h3>Drop your scorecard screenshot</h3>
+            <p>Or click to browse. We'll read the scores automatically.</p>
+            <button class="btn">Choose Screenshot</button>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="processing" id="processing">
+            <div class="spinner"></div>
+            <h3>Reading your scorecard...</h3>
+            <p id="ocrStatus">Initializing OCR engine...</p>
+        </div>
+
+        <div class="results" id="results">
+            <h3>Review & Confirm</h3>
+            <img id="previewImage" class="preview-image" alt="Scorecard preview">
+            
+            <div class="extracted-text" id="extractedText"></div>
+
+            <div class="score-form">
+                <div class="form-group">
+                    <label for="playerSelect">Player</label>
+                    <select id="playerSelect">
+                        <option value="">Select player...</option>
+                        <option value="ethan-brugger">Ethan Brugger</option>
+                        <option value="thomas-reynolds">Thomas Reynolds</option>
+                        <option value="cole-parton">Cole Parton</option>
+                        <option value="conrad-murray">Conrad Murray</option>
+                        <option value="justin-settlemoir">Justin Settlemoir</option>
+                        <option value="garrett-story">Garrett Story</option>
+                        <option value="dylan-huber">Dylan Huber</option>
+                        <option value="burke-estes">Burke Estes</option>
+                        <option value="tyler-estes">Tyler Estes</option>
+                        <option value="jimmy-carter">Jimmy Carter</option>
+                        <option value="rj-reynolds">RJ Reynolds</option>
+                        <option value="reid-estes">Reid Estes</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="courseSelect">Course</label>
+                    <select id="courseSelect">
+                        <option value="">Select course...</option>
+                        <option value="buffalo-ridge">Buffalo Ridge</option>
+                        <option value="paynes-valley">Payne's Valley</option>
+                        <option value="ozarks-national">Ozarks National</option>
+                        <option value="cliffhangers">Cliffhangers</option>
+                    </select>
+                </div>
+
+                <h4 style="margin-top: 25px; margin-bottom: 15px; color: #333;">Hole Scores (auto-detected, edit if needed)</h4>
+                <div class="holes-grid" id="holesGrid">
+                    <!-- Generated by JS -->
+                </div>
+
+                <div class="actions">
+                    <button class="btn" onclick="saveScores()">💾 Save Scores</button>
+                    <button class="btn btn-secondary" onclick="resetUpload()">🔄 Upload Another</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="leaderboard" id="leaderboard">
+            <h3>🏆 Live Leaderboard</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Course</th>
+                        <th>Thru</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Initialize IndexedDB for score storage
+        const DB_NAME = 'BigCedarScores';
+        const DB_VERSION = 1;
+        let db;
+
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => console.error('Failed to open DB');
+        request.onsuccess = (e) => { db = e.target.result; loadLeaderboard(); };
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('scores')) {
+                db.createObjectStore('scores', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        // DOM elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const processing = document.getElementById('processing');
+        const results = document.getElementById('results');
+        const ocrStatus = document.getElementById('ocrStatus');
+        const previewImage = document.getElementById('previewImage');
+        const extractedText = document.getElementById('extractedText');
+        const holesGrid = document.getElementById('holesGrid');
+
+        // Event listeners
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) handleFile(files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        // Generate hole inputs
+        function generateHoleInputs() {
+            holesGrid.innerHTML = '';
+            for (let i = 1; i <= 18; i++) {
+                const div = document.createElement('div');
+                div.className = 'hole-input';
+                div.innerHTML = `
+                    <label>Hole ${i}</label>
+                    <input type="number" id="hole${i}" min="1" max="15" placeholder="-">
+                `;
+                holesGrid.appendChild(div);
+            }
+        }
+        generateHoleInputs();
+
+        // Handle file upload
+        async function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Show processing
+            uploadZone.style.display = 'none';
+            processing.classList.add('active');
+
+            // Run OCR
+            try {
+                ocrStatus.textContent = 'Loading OCR engine...';
+                const result = await Tesseract.recognize(
+                    file,
+                    'eng',
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                ocrStatus.textContent = `Reading scorecard... ${Math.round(m.progress * 100)}%`;
+                            }
+                        }
+                    }
+                );
+
+                const text = result.data.text;
+                extractedText.textContent = text;
+
+                // Parse scores from OCR text
+                parseScoresFromText(text);
+
+                // Show results
+                processing.classList.remove('active');
+                results.classList.add('active');
+
+            } catch (error) {
+                console.error('OCR failed:', error);
+                ocrStatus.textContent = 'OCR failed. Please enter scores manually.';
+                setTimeout(() => {
+                    processing.classList.remove('active');
+                    results.classList.add('active');
+                }, 1500);
+            }
+        }
+
+        // Parse scores from OCR text
+        function parseScoresFromText(text) {
+            // Look for patterns like "Hole 1: 4" or just numbers in sequence
+            const lines = text.split('\n');
+            const scores = {};
+
+            // Try to find hole/score patterns
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // Pattern: "Hole X" followed by a number
+                const holeMatch = line.match(/hole\s*(\d+)/i);
+                if (holeMatch) {
+                    const holeNum = parseInt(holeMatch[1]);
+                    // Look for score in same line or next line
+                    const scoreMatch = line.match(/(\d+)/g);
+                    if (scoreMatch && holeNum >= 1 && holeNum <= 18) {
+                        // Take the last number as the score (most likely to be the actual score)
+                        scores[holeNum] = parseInt(scoreMatch[scoreMatch.length - 1]);
+                    }
+                }
+
+                // Pattern: "X." (hole number) followed by score
+                const holeDotMatch = line.match(/^(\d+)\.\s*(\d+)/);
+                if (holeDotMatch) {
+                    const holeNum = parseInt(holeDotMatch[1]);
+                    const score = parseInt(holeDotMatch[2]);
+                    if (holeNum >= 1 && holeNum <= 18 && score >= 1 && score <= 15) {
+                        scores[holeNum] = score;
+                    }
+                }
+
+                // Pattern: Just numbers in sequence (1-18 holes worth of scores)
+                const numbers = line.match(/\b(\d+)\b/g);
+                if (numbers && numbers.length >= 9 && numbers.length <= 18) {
+                    // Might be a row of scores
+                    numbers.forEach((num, idx) => {
+                        const holeNum = idx + 1;
+                        const score = parseInt(num);
+                        if (score >= 1 && score <= 15 && !scores[holeNum]) {
+                            scores[holeNum] = score;
+                        }
+                    });
+                }
+            }
+
+            // Fill in detected scores
+            Object.entries(scores).forEach(([hole, score]) => {
+                const input = document.getElementById(`hole${hole}`);
+                if (input) input.value = score;
+            });
+
+            // Try to detect player name from text
+            const playerNames = ['Ethan', 'Thomas', 'Cole', 'Conrad', 'Justin', 'Garrett', 'Dylan', 'Burke', 'Tyler', 'Jimmy', 'RJ', 'Reid'];
+            const lowerText = text.toLowerCase();
+            for (const name of playerNames) {
+                if (lowerText.includes(name.toLowerCase())) {
+                    // Map first name to select value
+                    const select = document.getElementById('playerSelect');
+                    for (const option of select.options) {
+                        if (option.text.toLowerCase().includes(name.toLowerCase())) {
+                            select.value = option.value;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Save scores to IndexedDB
+        function saveScores() {
+            const player = document.getElementById('playerSelect').value;
+            const course = document.getElementById('courseSelect').value;
+
+            if (!player || !course) {
+                alert('Please select a player and course');
+                return;
+            }
+
+            const scores = {};
+            let totalScore = 0;
+            let holesPlayed = 0;
+
+            for (let i = 1; i <= 18; i++) {
+                const score = document.getElementById(`hole${i}`).value;
+                if (score) {
+                    scores[i] = parseInt(score);
+                    totalScore += scores[i];
+                    holesPlayed++;
+                }
+            }
+
+            if (holesPlayed === 0) {
+                alert('Please enter at least one score');
+                return;
+            }
+
+            const transaction = db.transaction(['scores'], 'readwrite');
+            const store = transaction.objectStore('scores');
+
+            const record = {
+                player,
+                course,
+                scores,
+                totalScore,
+                holesPlayed,
+                timestamp: new Date().toISOString()
+            };
+
+            store.add(record);
+
+            transaction.oncomplete = () => {
+                alert(`✅ Saved! ${player} shot ${totalScore} through ${holesPlayed} holes`);
+                loadLeaderboard();
+                resetUpload();
+            };
+
+            transaction.onerror = () => {
+                alert('Failed to save scores');
+            };
+        }
+
+        // Load leaderboard from IndexedDB
+        function loadLeaderboard() {
+            if (!db) return;
+
+            const transaction = db.transaction(['scores'], 'readonly');
+            const store = transaction.objectStore('scores');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const scores = request.result;
+                const tbody = document.getElementById('leaderboardBody');
+                tbody.innerHTML = '';
+
+                // Group by player and get latest round
+                const playerRounds = {};
+                scores.forEach(score => {
+                    if (!playerRounds[score.player] || 
+                        new Date(score.timestamp) > new Date(playerRounds[score.player].timestamp)) {
+                        playerRounds[score.player] = score;
+                    }
+                });
+
+                // Sort by total score (ascending)
+                const sorted = Object.values(playerRounds).sort((a, b) => a.totalScore - b.totalScore);
+
+                sorted.forEach(round => {
+                    const row = document.createElement('tr');
+                    const playerName = document.getElementById('playerSelect')
+                        .querySelector(`option[value="${round.player}"]`)?.text || round.player;
+                    const courseName = document.getElementById('courseSelect')
+                        .querySelector(`option[value="${round.course}"]`)?.text || round.course;
+
+                    row.innerHTML = `
+                        <td>${playerName}</td>
+                        <td>${courseName}</td>
+                        <td>${round.holesPlayed}</td>
+                        <td class="total-score">${round.totalScore > 0 ? '+' : ''}${round.totalScore}</td>
+                        <td><span class="status-badge ${round.holesPlayed === 18 ? 'status-complete' : 'status-pending'}">${round.holesPlayed === 18 ? 'Complete' : 'In Progress'}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                if (sorted.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 40px;">No scores yet. Upload your first scorecard!</td></tr>';
+                }
+            };
+        }
+
+        // Reset for next upload
+        function resetUpload() {
+            uploadZone.style.display = 'block';
+            results.classList.remove('active');
+            fileInput.value = '';
+            document.getElementById('playerSelect').value = '';
+            document.getElementById('courseSelect').value = '';
+            for (let i = 1; i <= 18; i++) {
+                document.getElementById(`hole${i}`).value = '';
+            }
+        }
+
+        // Load leaderboard on page load
+        window.addEventListener('load', loadLeaderboard);
+    </script>
+</body>
+</html>
