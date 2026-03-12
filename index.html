@@ -1119,26 +1119,4 @@ Repeat until holed out">4-Man Scramble ⓘ</span> (Front 9 / Back 9 / 18 Overall
         </p>
     </footer>
 
-    <script>
-        function updateCountdown() {
-            const eventDate = new Date('March 20, 2026 00:00:00').getTime();
-            const now = new Date().getTime();
-            const distance = eventDate - now;
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-
-            const countdownEl = document.getElementById('countdown');
-            if (distance < 0) {
-                countdownEl.innerHTML = '<span class="countdown-label">The Tradition Has Begun</span>';
-            } else {
-                countdownEl.innerHTML = 
-                    '<span class="countdown-label">Countdown to the First Tee</span>' +
-                    '<span class="countdown-number">' + days + '</span> day' + (days !== 1 ? 's' : '');
-            }
-        }
-
-        updateCountdown();
-        setInterval(updateCountdown, 86400000);
-    </script>
-</body>
-</html>
+<script> function updateCountdown() { const eventDate = new Date('March 20, 2026 12:40:00').getTime(); const now = new Date().getTime(); const distance = eventDate - now; const countdownEl = document.getElementById('countdown'); if (distance < 0) { countdownEl.innerHTML = '<span class="countdown-label">The Tradition Has Begun</span>'; } else { const days = Math.floor(distance / (1000 * 60 * 60 * 24)); const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); const seconds = Math.floor((distance % (1000 * 60)) / 1000); let timeString = ''; if (days > 0) timeString += '<span class="countdown-number">' + days + '</span>d '; timeString += '<span class="countdown-number">' + String(hours).padStart(2, '0') + '</span>h '; timeString += '<span class="countdown-number">' + String(minutes).padStart(2, '0') + '</span>m '; timeString += '<span class="countdown-number">' + String(seconds).padStart(2, '0') + '</span>s'; countdownEl.innerHTML = '<span class="countdown-label">Countdown to the First Tee</span>' + timeString; } } updateCountdown(); setInterval(updateCountdown, 1000); </script>
