@@ -1,0 +1,40 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Node
+node_modules/
+backend/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env / secrets
+.env
+.env.*
+
+# Build / caches
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+coverage/
+
+# Logs
+*.log
+
+# SQLite
+*.sqlite
+*.sqlite3
+
+# Cursor / IDE
+.cursor/
+.vscode/
+*.code-workspace
+
+# Claude / AI tooling
+.claude/
+

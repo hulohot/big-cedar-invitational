@@ -5,9 +5,13 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const market = require('./market');
 const database = require('./database');
+
+// Initialize Anthropic client (uses ANTHROPIC_API_KEY env var automatically)
+const anthropic = new Anthropic();
 
 const app = express();
 const server = http.createServer(app);
@@ -38,7 +42,7 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..')));
 
 // API Routes
@@ -91,20 +95,97 @@ app.get('/api/volume', async (req, res) => {
 app.post('/api/trade', async (req, res) => {
     try {
         const { userId, playerName, tradeType, amount } = req.body;
-        
+
         if (!userId || !playerName || !tradeType || !amount) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
         const result = await market.executeTrade(userId, playerName, tradeType, amount);
-        
+
         // Broadcast trade to all clients
         broadcastTrade(result, userId, playerName, tradeType, amount);
         broadcastUpdate();
-        
+
         res.json(result);
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+});
+
+// Vision OCR endpoint - uses Claude to extract scores from 18 Birdies screenshots
+app.post('/api/ocr-vision', async (req, res) => {
+    try {
+        const { image } = req.body; // base64 encoded image with data URL prefix
+
+        if (!image) {
+            return res.status(400).json({ success: false, error: 'No image provided' });
+        }
+
+        // Extract base64 data and media type from data URL
+        const matches = image.match(/^data:(.+);base64,(.+)$/);
+        if (!matches) {
+            return res.status(400).json({ success: false, error: 'Invalid image format. Expected data URL.' });
+        }
+
+        const mediaType = matches[1];
+        const base64Data = matches[2];
+
+        const response = await anthropic.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1024,
+            messages: [{
+                role: 'user',
+                content: [
+                    {
+                        type: 'image',
+                        source: {
+                            type: 'base64',
+                            media_type: mediaType,
+                            data: base64Data
+                        }
+                    },
+                    {
+                        type: 'text',
+                        text: `Extract golf scores from this 18 Birdies screenshot.
+
+Return JSON only, no other text:
+{
+  "course": "course name if visible",
+  "players": [
+    {
+      "name": "player name",
+      "front9": [score1, score2, ..., score9],
+      "back9": [score10, score11, ..., score18],
+      "total": total_score
+    }
+  ]
+}
+
+Rules:
+- Extract all visible player rows
+- front9 and back9 are arrays of 9 hole scores each (integers 1-12)
+- If only 9 holes visible, use front9 only, leave back9 as empty array
+- total is the sum shown (or calculated if not shown)
+- Return empty players array if no scores found`
+                    }
+                ]
+            }]
+        });
+
+        // Parse Claude's response
+        const text = response.content[0].text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+        if (!jsonMatch) {
+            return res.status(400).json({ success: false, error: 'Could not parse scores from image' });
+        }
+
+        const extracted = JSON.parse(jsonMatch[0]);
+        res.json({ success: true, data: extracted });
+
+    } catch (error) {
+        console.error('Vision OCR error:', error);
+        res.status(500).json({ success: false, error: 'Vision API failed: ' + (error.message || 'Unknown error') });
     }
 });
 
