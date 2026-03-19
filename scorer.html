@@ -129,8 +129,43 @@
             overflow-y: auto;
             margin-bottom: 20px;
         }
+        .detected-course-status {
+            margin-top: -8px;
+            margin-bottom: 20px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none;
+        }
+        .detected-course-status.active { display: block; }
+        .detected-course-status.valid {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .detected-course-status.invalid {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
         .score-form {
             margin-top: 20px;
+        }
+        .player-card {
+            border: 1px solid #e3e3e3;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: #fcfcfc;
+        }
+        .player-card-header {
+            margin-bottom: 12px;
+            font-weight: 700;
+            color: #333;
+        }
+        .add-player-wrap {
+            margin-top: 10px;
+            margin-bottom: 18px;
         }
         .form-group {
             margin-bottom: 15px;
@@ -239,6 +274,67 @@
         }
         .status-pending { background: #fff3cd; color: #856404; }
         .status-complete { background: #d4edda; color: #155724; }
+        .ocr-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 8px;
+        }
+        .ocr-toggle label {
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 26px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #006747;
+        }
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        .ocr-method-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .ocr-method-label.active {
+            color: #006747;
+            font-weight: 600;
+        }
         @media (max-width: 600px) {
             .holes-grid {
                 grid-template-columns: repeat(6, 1fr);
@@ -261,6 +357,15 @@
             <input type="file" id="fileInput" accept="image/*">
         </div>
 
+        <div class="ocr-toggle">
+            <span class="ocr-method-label active" id="tesseractLabel">Tesseract (Local)</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="useVisionApi">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="ocr-method-label" id="visionLabel">Claude Vision (Better)</span>
+        </div>
+
         <div class="processing" id="processing">
             <div class="spinner"></div>
             <h3>Reading your scorecard...</h3>
@@ -272,24 +377,17 @@
             <img id="previewImage" class="preview-image" alt="Scorecard preview">
             
             <div class="extracted-text" id="extractedText"></div>
+            <div class="detected-course-status" id="detectedCourseStatus"></div>
 
             <div class="score-form">
                 <div class="form-group">
-                    <label for="playerSelect">Player</label>
-                    <select id="playerSelect">
-                        <option value="">Select player...</option>
-                        <option value="ethan-brugger">Ethan Brugger</option>
-                        <option value="thomas-reynolds">Thomas Reynolds</option>
-                        <option value="cole-parton">Cole Parton</option>
-                        <option value="conrad-murray">Conrad Murray</option>
-                        <option value="justin-settlemoir">Justin Settlemoir</option>
-                        <option value="garrett-story">Garrett Story</option>
-                        <option value="dylan-huber">Dylan Huber</option>
-                        <option value="burke-estes">Burke Estes</option>
-                        <option value="tyler-estes">Tyler Estes</option>
-                        <option value="jimmy-carter">Jimmy Carter</option>
-                        <option value="rj-reynolds">RJ Reynolds</option>
-                        <option value="reid-estes">Reid Estes</option>
+                    <label for="roundSelect">Round</label>
+                    <select id="roundSelect">
+                        <option value="">Select round...</option>
+                        <option value="round-1">Round 1 - Buffalo Ridge</option>
+                        <option value="round-2a">Round 2A - Payne's Valley</option>
+                        <option value="round-2b">Round 2B - Cliffhangers</option>
+                        <option value="round-3">Round 3 - Ozarks National</option>
                     </select>
                 </div>
 
@@ -304,9 +402,12 @@
                     </select>
                 </div>
 
-                <h4 style="margin-top: 25px; margin-bottom: 15px; color: #333;">Hole Scores (auto-detected, edit if needed)</h4>
-                <div class="holes-grid" id="holesGrid">
+                <h4 style="margin-top: 25px; margin-bottom: 15px; color: #333;">Players & Hole Scores (auto-detected, edit if needed)</h4>
+                <div id="playersContainer">
                     <!-- Generated by JS -->
+                </div>
+                <div class="add-player-wrap">
+                    <button class="btn btn-secondary" onclick="addPlayerCard()">+ Add Player</button>
                 </div>
 
                 <div class="actions">
@@ -322,6 +423,7 @@
                 <thead>
                     <tr>
                         <th>Player</th>
+                        <th>Round</th>
                         <th>Course</th>
                         <th>Thru</th>
                         <th>Score</th>
@@ -359,7 +461,89 @@
         const ocrStatus = document.getElementById('ocrStatus');
         const previewImage = document.getElementById('previewImage');
         const extractedText = document.getElementById('extractedText');
-        const holesGrid = document.getElementById('holesGrid');
+        const detectedCourseStatus = document.getElementById('detectedCourseStatus');
+        const playersContainer = document.getElementById('playersContainer');
+        const roundSelect = document.getElementById('roundSelect');
+        const courseSelect = document.getElementById('courseSelect');
+        const useVisionApiToggle = document.getElementById('useVisionApi');
+        const tesseractLabel = document.getElementById('tesseractLabel');
+        const visionLabel = document.getElementById('visionLabel');
+        let detectedCourse = null;
+
+        // Backend URL for Vision API
+        const BACKEND_URL = 'http://localhost:3000';
+
+        // Toggle label styling
+        useVisionApiToggle.addEventListener('change', () => {
+            const useVision = useVisionApiToggle.checked;
+            tesseractLabel.classList.toggle('active', !useVision);
+            visionLabel.classList.toggle('active', useVision);
+        });
+
+        const ROUND_CONFIG = {
+            'round-1': { label: 'Round 1', course: 'buffalo-ridge' },
+            'round-2a': { label: 'Round 2A', course: 'paynes-valley' },
+            'round-2b': { label: 'Round 2B', course: 'cliffhangers' },
+            'round-3': { label: 'Round 3', course: 'ozarks-national' }
+        };
+
+        const COURSE_CONFIG = {
+            'buffalo-ridge': {
+                label: 'Buffalo Ridge',
+                aliases: ['buffalo ridge']
+            },
+            'paynes-valley': {
+                label: "Payne's Valley",
+                aliases: ["payne's valley", 'paynes valley', 'paynes', 'payne valley']
+            },
+            'cliffhangers': {
+                label: 'Cliffhangers',
+                aliases: ['cliffhangers', 'cliff hanger', 'cliffhanger']
+            },
+            'ozarks-national': {
+                label: 'Ozarks National',
+                aliases: ['ozarks national', 'ozark national']
+            }
+        };
+
+        const COURSE_TO_ROUND = {
+            'buffalo-ridge': 'round-1',
+            'paynes-valley': 'round-2a',
+            'cliffhangers': 'round-2b',
+            'ozarks-national': 'round-3'
+        };
+
+        const PLAYER_OPTIONS = [
+            { value: 'ethan-brugger', label: 'Ethan Brugger',
+              aliases: ['ethan', 'ethan b', 'ethan brugger', 'ethan b.'] },
+            { value: 'thomas-reynolds', label: 'Thomas Reynolds',
+              aliases: ['thomas', 'thomas reynolds', 'thomas r', 'thomas r.'] },
+            { value: 'cole-parton', label: 'Cole Parton',
+              aliases: ['cole', 'cole parton', 'cole p', 'cole p.'] },
+            { value: 'conrad-murray', label: 'Conrad Murray',
+              aliases: ['conrad', 'conrad murray', 'conrad m', 'conrad m.'] },
+            { value: 'justin-settlemoir', label: 'Justin Settlemoir',
+              aliases: ['justin', 'justin settlemoir', 'justin s', 'justin s.'] },
+            { value: 'garrett-story', label: 'Garrett Story',
+              aliases: ['garrett', 'garrett story', 'garrett s', 'garrett s.', 'garrett...'] },
+            { value: 'dylan-huber', label: 'Dylan Huber',
+              aliases: ['dylan', 'dylan h', 'dylan huber', 'dylan h.'] },
+            { value: 'burke-estes', label: 'Burke Estes',
+              aliases: ['burke', 'burke estes', 'burke e', 'burke e.'] },
+            { value: 'tyler-estes', label: 'Tyler Estes',
+              aliases: ['tyler', 'tyler estes', 'tyler e', 'tyler e.'] },
+            { value: 'jimmy-carter', label: 'Jimmy Carter',
+              aliases: ['jimmy', 'jimmy carter', 'jimmy c', 'jimmy c.'] },
+            { value: 'rj-reynolds', label: 'RJ Reynolds',
+              aliases: ['rj', 'rj reynolds', 'rj r', 'rj r.', 'r j'] },
+            { value: 'reid-estes', label: 'Reid Estes',
+              aliases: ['reid', 'reid estes', 'reid e', 'reid e.'] }
+        ];
+
+        const PLAYER_LABELS = PLAYER_OPTIONS.reduce((acc, player) => {
+            acc[player.value] = player.label;
+            return acc;
+        }, {});
 
         // Event listeners
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -378,20 +562,203 @@
             if (e.target.files.length) handleFile(e.target.files[0]);
         });
 
-        // Generate hole inputs
-        function generateHoleInputs() {
-            holesGrid.innerHTML = '';
+        function playerOptionsMarkup(selectedValue = '') {
+            const options = ['<option value="">Select player...</option>'];
+            PLAYER_OPTIONS.forEach(player => {
+                const selected = player.value === selectedValue ? 'selected' : '';
+                options.push(`<option value="${player.value}" ${selected}>${player.label}</option>`);
+            });
+            return options.join('');
+        }
+
+        function createPlayerCard(playerValue = '', scoreMap = {}) {
+            const card = document.createElement('div');
+            card.className = 'player-card';
+
+            let holesMarkup = '';
             for (let i = 1; i <= 18; i++) {
-                const div = document.createElement('div');
-                div.className = 'hole-input';
-                div.innerHTML = `
-                    <label>Hole ${i}</label>
-                    <input type="number" id="hole${i}" min="1" max="15" placeholder="-">
+                const value = scoreMap[i] ?? '';
+                holesMarkup += `
+                    <div class="hole-input">
+                        <label>Hole ${i}</label>
+                        <input type="number" class="player-hole" data-hole="${i}" min="1" max="15" placeholder="-" value="${value}">
+                    </div>
                 `;
-                holesGrid.appendChild(div);
+            }
+
+            card.innerHTML = `
+                <div class="player-card-header">Player Round</div>
+                <div class="form-group">
+                    <label>Player</label>
+                    <select class="player-select">
+                        ${playerOptionsMarkup(playerValue)}
+                    </select>
+                </div>
+                <div class="holes-grid">
+                    ${holesMarkup}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function addPlayerCard(playerValue = '', scoreMap = {}) {
+            playersContainer.appendChild(createPlayerCard(playerValue, scoreMap));
+        }
+
+        function resetPlayerCards() {
+            playersContainer.innerHTML = '';
+            addPlayerCard();
+        }
+
+        function getPlayerEntriesFromForm() {
+            const cards = Array.from(playersContainer.querySelectorAll('.player-card'));
+
+            return cards.map(card => {
+                const player = card.querySelector('.player-select').value;
+                const scores = {};
+                let totalScore = 0;
+                let holesPlayed = 0;
+
+                card.querySelectorAll('.player-hole').forEach(input => {
+                    if (!input.value) return;
+                    const hole = parseInt(input.dataset.hole, 10);
+                    const score = parseInt(input.value, 10);
+                    if (!Number.isNaN(hole) && !Number.isNaN(score) && score >= 1 && score <= 15) {
+                        scores[hole] = score;
+                        totalScore += score;
+                        holesPlayed++;
+                    }
+                });
+
+                return { player, scores, totalScore, holesPlayed };
+            });
+        }
+
+        resetPlayerCards();
+
+        // Preprocess image for better OCR (handles dark backgrounds, colored circles)
+        async function preprocessImageForOcr(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Scale up for better OCR accuracy
+                    const scale = 2;
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+
+                    // Draw scaled image
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Get image data for processing
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    // Process each pixel
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        // Convert to grayscale
+                        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                        // Invert (18 Birdies has light text on dark bg)
+                        const inverted = 255 - gray;
+
+                        // Increase contrast with threshold
+                        // Scores are white/light colored, background is dark blue
+                        const threshold = 100;
+                        const final = inverted > threshold ? 255 : 0;
+
+                        data[i] = final;
+                        data[i + 1] = final;
+                        data[i + 2] = final;
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Return as blob for Tesseract
+                    canvas.toBlob(resolve, 'image/png');
+                };
+
+                // Load image from file
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Extract scores using Claude Vision API
+        async function extractWithVisionApi(file) {
+            // Convert file to base64 data URL
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+
+            const response = await fetch(`${BACKEND_URL}/api/ocr-vision`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64 })
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Vision API failed');
+            }
+
+            return result.data;
+        }
+
+        // Populate player cards from Vision API response
+        function populateFromVisionData(data) {
+            playersContainer.innerHTML = '';
+
+            if (data.players && data.players.length > 0) {
+                data.players.forEach(player => {
+                    const scoreMap = {};
+
+                    // Map front9 scores to holes 1-9
+                    if (player.front9 && Array.isArray(player.front9)) {
+                        player.front9.forEach((score, idx) => {
+                            if (score && score >= 1 && score <= 12) {
+                                scoreMap[idx + 1] = score;
+                            }
+                        });
+                    }
+
+                    // Map back9 scores to holes 10-18
+                    if (player.back9 && Array.isArray(player.back9)) {
+                        player.back9.forEach((score, idx) => {
+                            if (score && score >= 1 && score <= 12) {
+                                scoreMap[idx + 10] = score;
+                            }
+                        });
+                    }
+
+                    // Try to match player name to our player list
+                    const matchedPlayer = findPlayerFromLine(player.name || '');
+                    addPlayerCard(matchedPlayer || '', scoreMap);
+                });
+            } else {
+                addPlayerCard();
+            }
+
+            // Detect course from Vision API response
+            if (data.course) {
+                detectedCourse = detectCourseFromText(data.course);
+                renderDetectedCourseStatus(detectedCourse);
+                if (detectedCourse) {
+                    courseSelect.value = detectedCourse;
+                    roundSelect.value = COURSE_TO_ROUND[detectedCourse] || '';
+                }
             }
         }
-        generateHoleInputs();
 
         // Handle file upload
         async function handleFile(file) {
@@ -411,34 +778,63 @@
             uploadZone.style.display = 'none';
             processing.classList.add('active');
 
-            // Run OCR
+            const useVision = useVisionApiToggle.checked;
+
+            // Run OCR (Vision API or Tesseract)
             try {
-                ocrStatus.textContent = 'Loading OCR engine...';
-                const result = await Tesseract.recognize(
-                    file,
-                    'eng',
-                    {
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                ocrStatus.textContent = `Reading scorecard... ${Math.round(m.progress * 100)}%`;
-                            }
+                if (useVision) {
+                    // Use Claude Vision API
+                    ocrStatus.textContent = 'Sending to Claude Vision API...';
+                    const visionData = await extractWithVisionApi(file);
+
+                    // Show raw response in extracted text area
+                    extractedText.textContent = JSON.stringify(visionData, null, 2);
+
+                    // Populate form from structured data
+                    populateFromVisionData(visionData);
+
+                    // Show results
+                    processing.classList.remove('active');
+                    results.classList.add('active');
+                } else {
+                    // Use Tesseract (local OCR)
+                    ocrStatus.textContent = 'Preprocessing image...';
+
+                    // Preprocess image for better OCR on 18 Birdies screenshots
+                    const processedImage = await preprocessImageForOcr(file);
+
+                    ocrStatus.textContent = 'Loading OCR engine...';
+                    const result = await Tesseract.recognize(
+                        processedImage,
+                        'eng',
+                        {
+                            logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    ocrStatus.textContent = `Reading scorecard... ${Math.round(m.progress * 100)}%`;
+                                }
+                            },
+                            // Tesseract configuration for scorecard-like content
+                            tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,-\'',
+                            tessedit_pageseg_mode: '6', // Assume uniform block of text
                         }
-                    }
-                );
+                    );
 
-                const text = result.data.text;
-                extractedText.textContent = text;
+                    const text = result.data.text;
+                    extractedText.textContent = text;
 
-                // Parse scores from OCR text
-                parseScoresFromText(text);
+                    // Parse scores from OCR text
+                    parseScoresFromText(text);
 
-                // Show results
-                processing.classList.remove('active');
-                results.classList.add('active');
+                    // Show results
+                    processing.classList.remove('active');
+                    results.classList.add('active');
+                }
 
             } catch (error) {
                 console.error('OCR failed:', error);
-                ocrStatus.textContent = 'OCR failed. Please enter scores manually.';
+                ocrStatus.textContent = useVision
+                    ? `Vision API failed: ${error.message}. Try Tesseract or enter manually.`
+                    : 'OCR failed. Please enter scores manually.';
                 setTimeout(() => {
                     processing.classList.remove('active');
                     results.classList.add('active');
@@ -446,120 +842,330 @@
             }
         }
 
-        // Parse scores from OCR text
-        function parseScoresFromText(text) {
-            // Look for patterns like "Hole 1: 4" or just numbers in sequence
-            const lines = text.split('\n');
-            const scores = {};
+        function normalizeText(value) {
+            return (value || '')
+                .toLowerCase()
+                .replace(/[^a-z0-9.\s]/g, ' ')  // Keep periods
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
 
-            // Try to find hole/score patterns
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
+        // Pre-process OCR text to handle 18 Birdies specific artifacts
+        function preprocessOcrLine(line) {
+            return line
+                // Convert bracket notation [5] or (5) -> " 5 " with spaces
+                .replace(/[\[\(](\d)[\]\)]/g, ' $1 ')
+                // Handle merged bracket numbers like [71 or (71 -> " 7 1" (bracket artifacts)
+                .replace(/[\[\(](\d)(\d)/g, ' $1 $2')
+                // Remove remaining brackets and parentheses
+                .replace(/[\[\]\(\)]/g, ' ')
+                // Clean up multiple spaces
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
 
-                // Pattern: "Hole X" followed by a number
-                const holeMatch = line.match(/hole\s*(\d+)/i);
-                if (holeMatch) {
-                    const holeNum = parseInt(holeMatch[1]);
-                    // Look for score in same line or next line
-                    const scoreMatch = line.match(/(\d+)/g);
-                    if (scoreMatch && holeNum >= 1 && holeNum <= 18) {
-                        // Take the last number as the score (most likely to be the actual score)
-                        scores[holeNum] = parseInt(scoreMatch[scoreMatch.length - 1]);
+        // Check if a line looks like a date or metadata (not scores)
+        function isMetadataLine(line) {
+            const normalized = line.toLowerCase();
+            // Date patterns: contains year like 2024, 2025, 2026
+            if (/20\d{2}/.test(line)) return true;
+            // Contains "holes" indicator
+            if (/\d+\s*holes?/i.test(line)) return true;
+            // Contains month/date patterns
+            if (/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(line)) return true;
+            return false;
+        }
+
+        function detectCourseFromText(text) {
+            const normalized = normalizeText(text);
+
+            for (const [slug, config] of Object.entries(COURSE_CONFIG)) {
+                for (const alias of config.aliases) {
+                    if (normalized.includes(normalizeText(alias))) {
+                        return slug;
                     }
-                }
-
-                // Pattern: "X." (hole number) followed by score
-                const holeDotMatch = line.match(/^(\d+)\.\s*(\d+)/);
-                if (holeDotMatch) {
-                    const holeNum = parseInt(holeDotMatch[1]);
-                    const score = parseInt(holeDotMatch[2]);
-                    if (holeNum >= 1 && holeNum <= 18 && score >= 1 && score <= 15) {
-                        scores[holeNum] = score;
-                    }
-                }
-
-                // Pattern: Just numbers in sequence (1-18 holes worth of scores)
-                const numbers = line.match(/\b(\d+)\b/g);
-                if (numbers && numbers.length >= 9 && numbers.length <= 18) {
-                    // Might be a row of scores
-                    numbers.forEach((num, idx) => {
-                        const holeNum = idx + 1;
-                        const score = parseInt(num);
-                        if (score >= 1 && score <= 15 && !scores[holeNum]) {
-                            scores[holeNum] = score;
-                        }
-                    });
                 }
             }
 
-            // Fill in detected scores
-            Object.entries(scores).forEach(([hole, score]) => {
-                const input = document.getElementById(`hole${hole}`);
-                if (input) input.value = score;
-            });
+            return null;
+        }
 
-            // Try to detect player name from text
-            const playerNames = ['Ethan', 'Thomas', 'Cole', 'Conrad', 'Justin', 'Garrett', 'Dylan', 'Burke', 'Tyler', 'Jimmy', 'RJ', 'Reid'];
-            const lowerText = text.toLowerCase();
-            for (const name of playerNames) {
-                if (lowerText.includes(name.toLowerCase())) {
-                    // Map first name to select value
-                    const select = document.getElementById('playerSelect');
-                    for (const option of select.options) {
-                        if (option.text.toLowerCase().includes(name.toLowerCase())) {
-                            select.value = option.value;
+        function getRoundLabel(roundId) {
+            return ROUND_CONFIG[roundId]?.label || 'Unknown';
+        }
+
+        function extractLineScores(line) {
+            // Skip metadata lines (dates, "18 Holes", etc.)
+            if (isMetadataLine(line)) return null;
+
+            // Pre-process to handle 18 Birdies bracket notation
+            const cleaned = preprocessOcrLine(line);
+            const tokens = cleaned.match(/\d+/g) || [];
+            let values = [];
+
+            tokens.forEach(token => {
+                const num = parseInt(token, 10);
+
+                // Single digit: valid hole score (1-9)
+                if (token.length === 1) {
+                    values.push(num);
+                    return;
+                }
+
+                // Two digits
+                if (token.length === 2) {
+                    // Valid double-digit hole score (10-12 realistic, allow up to 15)
+                    if (num >= 10 && num <= 15) {
+                        values.push(num);
+                        return;
+                    }
+                    // Likely 9-hole total (30-60 range) - skip entirely
+                    if (num >= 30 && num <= 60) {
+                        return;
+                    }
+                    // Two-digit numbers 16-29 are ambiguous - could be merged scores or noise
+                    // Split them as they're likely merged single digits
+                    values.push(parseInt(token[0], 10));
+                    values.push(parseInt(token[1], 10));
+                    return;
+                }
+
+                // Three+ digits: likely merged scores with possible total
+                // Process digit by digit, skipping apparent totals
+                let i = 0;
+                while (i < token.length) {
+                    // Check if remaining (including current digit) looks like a total
+                    const remaining = token.slice(i);
+                    const remainingNum = parseInt(remaining, 10);
+
+                    // Check NEXT position first - if taking this digit leaves a total, skip this digit too
+                    if (remaining.length === 3) {
+                        const lastTwo = parseInt(token.slice(i + 1), 10);
+                        // If next two digits are a 9-hole total (30-60), skip this leading digit
+                        if (lastTwo >= 30 && lastTwo <= 60) {
                             break;
                         }
                     }
+
+                    if (remaining.length === 2 && remainingNum >= 30 && remainingNum <= 60) {
+                        break; // Stop - this is likely a 9-hole total
+                    }
+                    if (remaining.length === 2 && remainingNum >= 80 && remainingNum <= 120) {
+                        break; // Stop - this is likely an 18-hole total
+                    }
+                    if (remaining.length === 3 && remainingNum >= 100 && remainingNum <= 150) {
+                        break; // Stop - this is likely an 18-hole total (100+)
+                    }
+
+                    // Check for two-digit score (10-12)
+                    if (i + 1 < token.length) {
+                        const twoDigit = parseInt(token.slice(i, i + 2), 10);
+                        if (twoDigit >= 10 && twoDigit <= 12) {
+                            values.push(twoDigit);
+                            i += 2;
+                            continue;
+                        }
+                    }
+
+                    // Take single digit
+                    values.push(parseInt(token[i], 10));
+                    i++;
+                }
+            });
+
+            // Filter to valid stroke range (1-12 covers realistic scores)
+            values = values.filter(num => !Number.isNaN(num) && num >= 1 && num <= 12);
+
+            // If we have more than 9 scores, trim trailing digits that look like total fragments
+            while (values.length > 9) {
+                const lastVal = values[values.length - 1];
+                // Single trailing digit 3-6 or 1 likely part of total (30s, 40s, 50s, 100s)
+                if ((lastVal >= 3 && lastVal <= 6) || lastVal === 1) {
+                    values.pop();
+                } else {
                     break;
                 }
+            }
+
+            // Still too many? Take first 9
+            if (values.length > 9) {
+                values = values.slice(0, 9);
+            }
+
+            // Require at least 7 valid scores (allow some OCR misses)
+            if (values.length < 7) return null;
+
+            return values;
+        }
+
+        function findPlayerFromLine(line) {
+            const normalized = normalizeText(line);
+
+            for (const player of PLAYER_OPTIONS) {
+                for (const alias of player.aliases) {
+                    const aliasNorm = normalizeText(alias);
+
+                    // Skip very short aliases to avoid false positives
+                    if (aliasNorm.length < 2) continue;
+
+                    // Exact match
+                    if (normalized === aliasNorm) {
+                        return player.value;
+                    }
+
+                    // Word boundary match - alias must be at start/end or surrounded by non-letters
+                    const escaped = aliasNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const pattern = new RegExp(`(?:^|[^a-z])${escaped}(?:[^a-z]|$)`);
+                    if (pattern.test(normalized)) {
+                        return player.value;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function renderDetectedCourseStatus(slug) {
+            detectedCourseStatus.classList.add('active');
+            detectedCourseStatus.classList.remove('valid', 'invalid');
+
+            if (slug && COURSE_CONFIG[slug]) {
+                detectedCourseStatus.classList.add('valid');
+                detectedCourseStatus.textContent = `Detected course: ${COURSE_CONFIG[slug].label}`;
+                return;
+            }
+
+            detectedCourseStatus.classList.add('invalid');
+            detectedCourseStatus.textContent = 'Detected course: Not a valid tournament course. Saving is blocked for this screenshot.';
+        }
+
+        // Parse scores from OCR text
+        function parseScoresFromText(text) {
+            const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+            const parsed = {};
+            const unassignedRows = [];
+            let currentPlayer = null;
+
+            lines.forEach(line => {
+                const foundPlayer = findPlayerFromLine(line);
+                if (foundPlayer) {
+                    currentPlayer = foundPlayer;
+                    if (!parsed[currentPlayer]) parsed[currentPlayer] = [];
+                }
+
+                const rowScores = extractLineScores(line);
+                if (rowScores) {
+                    if (currentPlayer) {
+                        parsed[currentPlayer].push(rowScores);
+                    } else {
+                        unassignedRows.push(rowScores);
+                    }
+                }
+            });
+
+            playersContainer.innerHTML = '';
+
+            Object.entries(parsed).forEach(([player, rows]) => {
+                if (!rows.length) return;
+                const firstNine = rows[0] || [];
+                const backNine = rows[1] || [];
+                const scoreMap = {};
+
+                firstNine.slice(0, 9).forEach((score, idx) => { scoreMap[idx + 1] = score; });
+                backNine.slice(0, 9).forEach((score, idx) => { scoreMap[idx + 10] = score; });
+
+                addPlayerCard(player, scoreMap);
+            });
+
+            // Preserve score rows even when player names are unreadable.
+            for (let i = 0; i < unassignedRows.length; i += 2) {
+                const firstNine = unassignedRows[i] || [];
+                const backNine = unassignedRows[i + 1] || [];
+                const scoreMap = {};
+
+                firstNine.slice(0, 9).forEach((score, idx) => { scoreMap[idx + 1] = score; });
+                backNine.slice(0, 9).forEach((score, idx) => { scoreMap[idx + 10] = score; });
+
+                addPlayerCard('', scoreMap);
+            }
+
+            if (!playersContainer.children.length) {
+                addPlayerCard();
+            }
+
+            detectedCourse = detectCourseFromText(text);
+            renderDetectedCourseStatus(detectedCourse);
+            if (detectedCourse) {
+                courseSelect.value = detectedCourse;
+                roundSelect.value = COURSE_TO_ROUND[detectedCourse] || '';
             }
         }
 
         // Save scores to IndexedDB
         function saveScores() {
-            const player = document.getElementById('playerSelect').value;
-            const course = document.getElementById('courseSelect').value;
+            const roundId = roundSelect.value;
+            const course = courseSelect.value;
 
-            if (!player || !course) {
-                alert('Please select a player and course');
+            if (!roundId || !course) {
+                alert('Please select a round and course');
                 return;
             }
 
-            const scores = {};
-            let totalScore = 0;
-            let holesPlayed = 0;
-
-            for (let i = 1; i <= 18; i++) {
-                const score = document.getElementById(`hole${i}`).value;
-                if (score) {
-                    scores[i] = parseInt(score);
-                    totalScore += scores[i];
-                    holesPlayed++;
-                }
+            const roundConfig = ROUND_CONFIG[roundId];
+            if (!roundConfig) {
+                alert('Invalid round selected');
+                return;
             }
 
-            if (holesPlayed === 0) {
-                alert('Please enter at least one score');
+            if (course !== roundConfig.course) {
+                alert(`Selected round must be played at ${COURSE_CONFIG[roundConfig.course].label}`);
+                return;
+            }
+
+            if (!detectedCourse || !COURSE_CONFIG[detectedCourse]) {
+                alert('Could not verify a valid tournament course from this screenshot. Please upload a scorecard from a tournament course.');
+                return;
+            }
+
+            if (detectedCourse !== course) {
+                alert(`Screenshot appears to be for ${COURSE_CONFIG[detectedCourse].label}, which does not match your selected course.`);
+                return;
+            }
+
+            const entries = getPlayerEntriesFromForm();
+            const validEntries = entries.filter(entry => entry.player && entry.holesPlayed > 0);
+
+            if (!validEntries.length) {
+                alert('Please add at least one player with scores');
+                return;
+            }
+
+            const uniquePlayers = new Set(validEntries.map(entry => entry.player));
+            if (uniquePlayers.size !== validEntries.length) {
+                alert('Each player can only appear once in this upload');
                 return;
             }
 
             const transaction = db.transaction(['scores'], 'readwrite');
             const store = transaction.objectStore('scores');
+            const timestamp = new Date().toISOString();
 
-            const record = {
-                player,
-                course,
-                scores,
-                totalScore,
-                holesPlayed,
-                timestamp: new Date().toISOString()
-            };
-
-            store.add(record);
+            validEntries.forEach(entry => {
+                store.add({
+                    player: entry.player,
+                    roundId,
+                    roundLabel: roundConfig.label,
+                    course,
+                    detectedCourse,
+                    scores: entry.scores,
+                    totalScore: entry.totalScore,
+                    holesPlayed: entry.holesPlayed,
+                    timestamp
+                });
+            });
 
             transaction.oncomplete = () => {
-                alert(`✅ Saved! ${player} shot ${totalScore} through ${holesPlayed} holes`);
+                alert(`✅ Saved ${validEntries.length} player scorecard(s) for ${roundConfig.label}`);
                 loadLeaderboard();
                 resetUpload();
             };
@@ -582,12 +1188,14 @@
                 const tbody = document.getElementById('leaderboardBody');
                 tbody.innerHTML = '';
 
-                // Group by player and get latest round
+                // Group by player + round and keep latest entry
                 const playerRounds = {};
                 scores.forEach(score => {
-                    if (!playerRounds[score.player] || 
-                        new Date(score.timestamp) > new Date(playerRounds[score.player].timestamp)) {
-                        playerRounds[score.player] = score;
+                    const groupingRound = score.roundId || COURSE_TO_ROUND[score.course] || score.course || 'unknown';
+                    const key = `${score.player}::${groupingRound}`;
+                    if (!playerRounds[key] ||
+                        new Date(score.timestamp) > new Date(playerRounds[key].timestamp)) {
+                        playerRounds[key] = score;
                     }
                 });
 
@@ -596,13 +1204,14 @@
 
                 sorted.forEach(round => {
                     const row = document.createElement('tr');
-                    const playerName = document.getElementById('playerSelect')
-                        .querySelector(`option[value="${round.player}"]`)?.text || round.player;
-                    const courseName = document.getElementById('courseSelect')
-                        .querySelector(`option[value="${round.course}"]`)?.text || round.course;
+                    const playerName = PLAYER_LABELS[round.player] || round.player;
+                    const courseName = courseSelect
+                        .querySelector(`option[value="${round.course}"]`)?.text || round.course || 'Unknown';
+                    const roundName = round.roundLabel || getRoundLabel(round.roundId || COURSE_TO_ROUND[round.course]);
 
                     row.innerHTML = `
                         <td>${playerName}</td>
+                        <td>${roundName}</td>
                         <td>${courseName}</td>
                         <td>${round.holesPlayed}</td>
                         <td class="total-score">${round.totalScore > 0 ? '+' : ''}${round.totalScore}</td>
@@ -612,7 +1221,7 @@
                 });
 
                 if (sorted.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 40px;">No scores yet. Upload your first scorecard!</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 40px;">No scores yet. Upload your first scorecard!</td></tr>';
                 }
             };
         }
@@ -622,11 +1231,12 @@
             uploadZone.style.display = 'block';
             results.classList.remove('active');
             fileInput.value = '';
-            document.getElementById('playerSelect').value = '';
-            document.getElementById('courseSelect').value = '';
-            for (let i = 1; i <= 18; i++) {
-                document.getElementById(`hole${i}`).value = '';
-            }
+            roundSelect.value = '';
+            courseSelect.value = '';
+            detectedCourse = null;
+            detectedCourseStatus.classList.remove('active', 'valid', 'invalid');
+            detectedCourseStatus.textContent = '';
+            resetPlayerCards();
         }
 
         // Load leaderboard on page load
