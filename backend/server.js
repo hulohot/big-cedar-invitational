@@ -14,6 +14,13 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
+const ALLOWED_ORIGINS = new Set([
+    'http://192.168.5.208:8082',
+    'http://localhost:8082',
+    'http://localhost:3000',
+    'https://hulohot.github.io',
+    'https://9ee7-72-204-20-47.ngrok-free.app',
+]);
 
 // Security middleware
 app.use(helmet({
@@ -21,10 +28,29 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// CORS - allow GitHub Pages and local network
+// CORS - allow known hosts plus local network and file:// access
 app.use(cors({
-    origin: ['http://192.168.5.208:8082', 'http://localhost:8082', 'http://localhost:3000', 'https://hulohot.github.io', 'https://9ee7-72-204-20-47.ngrok-free.app'],
-    methods: ['GET', 'POST'],
+    origin: (origin, callback) => {
+        if (!origin || origin === 'null') {
+            callback(null, true);
+            return;
+        }
+
+        if (ALLOWED_ORIGINS.has(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        // Allow local/private network hosts with any port.
+        const localNetworkPattern = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+        if (localNetworkPattern.test(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true
 }));
 
@@ -42,6 +68,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
 
 // API Routes
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, timestamp: new Date().toISOString() });
+});
+
 app.get('/api/players', async (req, res) => {
     try {
         const players = market.getPlayers();

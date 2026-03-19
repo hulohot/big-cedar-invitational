@@ -239,6 +239,31 @@
         }
         .status-pending { background: #fff3cd; color: #856404; }
         .status-complete { background: #d4edda; color: #155724; }
+        .leaderboard-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .leaderboard h3 {
+            margin-bottom: 0;
+        }
+        .sync-status {
+            font-size: 0.9rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .sync-live {
+            background: #d4edda;
+            color: #155724;
+        }
+        .sync-offline {
+            background: #fff3cd;
+            color: #856404;
+        }
         @media (max-width: 600px) {
             .holes-grid {
                 grid-template-columns: repeat(6, 1fr);
@@ -317,7 +342,10 @@
         </div>
 
         <div class="leaderboard" id="leaderboard">
-            <h3>🏆 Live Leaderboard</h3>
+            <div class="leaderboard-head">
+                <h3>🏆 Live Leaderboard</h3>
+                <div class="sync-status sync-offline" id="syncStatus">Checking live sync…</div>
+            </div>
             <table class="leaderboard-table">
                 <thead>
                     <tr>
@@ -335,21 +363,46 @@
         </div>
     </div>
 
+    <script src="scoring-config.js"></script>
     <script>
-        // Initialize IndexedDB for score storage
-        const DB_NAME = 'BigCedarScores';
-        const DB_VERSION = 1;
-        let db;
+        const PLAYER_NAME_BY_ID = {
+            'ethan-brugger': 'Ethan Brugger',
+            'thomas-reynolds': 'Thomas Reynolds',
+            'cole-parton': 'Cole Parton',
+            'conrad-murray': 'Conrad Murray',
+            'justin-settlemoir': 'Justin Settlemoir',
+            'garrett-story': 'Garrett Story',
+            'dylan-huber': 'Dylan Huber',
+            'burke-estes': 'Burke Estes',
+            'tyler-estes': 'Tyler Estes',
+            'jimmy-carter': 'Jimmy Carter',
+            'rj-reynolds': 'RJ Reynolds',
+            'reid-estes': 'Reid Estes'
+        };
 
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onerror = () => console.error('Failed to open DB');
-        request.onsuccess = (e) => { db = e.target.result; loadLeaderboard(); };
-        request.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('scores')) {
-                db.createObjectStore('scores', { keyPath: 'id', autoIncrement: true });
+        const COURSE_CONFIG = {
+            'buffalo-ridge': {
+                name: 'Buffalo Ridge',
+                pars: [5, 4, 4, 3, 4, 4, 3, 5, 3, 4, 3, 4, 4, 5, 4, 4, 3, 5]
+            },
+            'paynes-valley': {
+                name: "Payne's Valley",
+                pars: [4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 4, 5, 4, 4, 3, 4, 5]
+            },
+            'ozarks-national': {
+                name: 'Ozarks National',
+                pars: [5, 3, 4, 4, 4, 3, 5, 3, 5, 4, 5, 3, 4, 4, 4, 4, 3, 4]
+            },
+            'cliffhangers': {
+                name: 'Cliffhangers',
+                pars: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
             }
         };
+        const DEFAULT_CONVEX_FUNCTIONS = {
+            getLeaderboard: 'scoring:getLeaderboard',
+            submitScorecard: 'scoring:submitScorecard'
+        };
+        const DEFAULT_CONVEX_MODULE_URL = 'https://esm.sh/convex@1.28.0/browser';
 
         // DOM elements
         const uploadZone = document.getElementById('uploadZone');
@@ -360,6 +413,12 @@
         const previewImage = document.getElementById('previewImage');
         const extractedText = document.getElementById('extractedText');
         const holesGrid = document.getElementById('holesGrid');
+        const syncStatus = document.getElementById('syncStatus');
+        const leaderboardBody = document.getElementById('leaderboardBody');
+
+        let convexConfig = null;
+        let convexClient = null;
+        let convexSubscription = null;
 
         // Event listeners
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -377,6 +436,146 @@
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length) handleFile(e.target.files[0]);
         });
+        window.addEventListener('beforeunload', () => {
+            disconnectConvexRealtime();
+        });
+
+        function setSyncStatus(isLive, message) {
+            syncStatus.textContent = message;
+            syncStatus.className = `sync-status ${isLive ? 'sync-live' : 'sync-offline'}`;
+        }
+
+        function resolveScoringConfig() {
+            const query = new URLSearchParams(window.location.search);
+            const runtimeConfig = window.BCI_SCORING_CONFIG || {};
+
+            return {
+                convexUrl: query.get('convexUrl') || runtimeConfig.convexUrl || '',
+                convexModuleUrl: query.get('convexModuleUrl') || runtimeConfig.convexModuleUrl || DEFAULT_CONVEX_MODULE_URL,
+                functions: {
+                    ...DEFAULT_CONVEX_FUNCTIONS,
+                    ...(runtimeConfig.functions || {})
+                }
+            };
+        }
+
+        function formatToPar(toPar) {
+            if (toPar === 0) return 'E';
+            return toPar > 0 ? `+${toPar}` : `${toPar}`;
+        }
+
+        function sortLeaderboard(rounds) {
+            return [...rounds].sort((a, b) => {
+                if (a.toPar !== b.toPar) return a.toPar - b.toPar;
+                if (a.holesPlayed !== b.holesPlayed) return b.holesPlayed - a.holesPlayed;
+                return (a.playerName || '').localeCompare(b.playerName || '');
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderLeaderboard(rounds) {
+            leaderboardBody.innerHTML = '';
+            const sorted = sortLeaderboard(rounds);
+
+            sorted.forEach((round) => {
+                const row = document.createElement('tr');
+                const scoreClass = round.toPar < 0 ? 'score-good' : (round.toPar > 0 ? 'score-bad' : 'score-par');
+                const statusClass = round.holesPlayed === 18 ? 'status-complete' : 'status-pending';
+                const statusText = round.holesPlayed === 18 ? 'Complete' : 'In Progress';
+
+                row.innerHTML = `
+                    <td>${escapeHtml(round.playerName || PLAYER_NAME_BY_ID[round.playerId] || round.playerId)}</td>
+                    <td>${escapeHtml(round.courseName || COURSE_CONFIG[round.courseId]?.name || round.courseId)}</td>
+                    <td>${round.holesPlayed}</td>
+                    <td class="total-score ${scoreClass}">${formatToPar(round.toPar)}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                `;
+                leaderboardBody.appendChild(row);
+            });
+
+            if (sorted.length === 0) {
+                leaderboardBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 40px;">No scores yet. Upload your first scorecard!</td></tr>';
+            }
+        }
+
+        function disconnectConvexRealtime() {
+            if (typeof convexSubscription === 'function') {
+                convexSubscription();
+                convexSubscription = null;
+            }
+            if (convexClient && typeof convexClient.close === 'function') {
+                convexClient.close().catch(() => {});
+            }
+            convexClient = null;
+        }
+
+        function renderConvexLeaderboardPayload(payload) {
+            const leaderboard = Array.isArray(payload?.leaderboard)
+                ? payload.leaderboard
+                : (Array.isArray(payload) ? payload : []);
+            renderLeaderboard(leaderboard);
+        }
+
+        async function initializeConvexProvider() {
+            if (!convexConfig?.convexUrl) {
+                setSyncStatus(false, 'Convex URL is missing in scoring-config.js');
+                return false;
+            }
+
+            disconnectConvexRealtime();
+
+            try {
+                const convexModule = await import(convexConfig.convexModuleUrl);
+                const ConvexClientCtor = convexModule.ConvexClient || convexModule.default?.ConvexClient;
+                if (!ConvexClientCtor) {
+                    throw new Error('ConvexClient export was not found');
+                }
+                convexClient = new ConvexClientCtor(convexConfig.convexUrl);
+
+                const initial = await convexClient.query(convexConfig.functions.getLeaderboard, {});
+                renderConvexLeaderboardPayload(initial);
+
+                if (typeof convexClient.onUpdate !== 'function') {
+                    throw new Error('Convex client does not support realtime subscriptions');
+                }
+                convexSubscription = convexClient.onUpdate(
+                    convexConfig.functions.getLeaderboard,
+                    {},
+                    (payload) => {
+                        renderConvexLeaderboardPayload(payload);
+                    },
+                    (subscribeError) => {
+                        console.error('Convex subscription error:', subscribeError);
+                        setSyncStatus(false, 'Live updates disconnected from Convex');
+                    }
+                );
+
+                setSyncStatus(true, `Convex live sync connected (${new URL(convexConfig.convexUrl).host})`);
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize Convex provider:', error);
+                setSyncStatus(false, 'Failed to connect to Convex');
+                convexClient = null;
+                disconnectConvexRealtime();
+                return false;
+            }
+        }
+
+        async function initializeLiveScoring() {
+            convexConfig = resolveScoringConfig();
+            const convexReady = await initializeConvexProvider();
+            if (!convexReady) {
+                renderLeaderboard([]);
+            }
+        }
 
         // Generate hole inputs
         function generateHoleInputs() {
@@ -391,7 +590,6 @@
                 holesGrid.appendChild(div);
             }
         }
-        generateHoleInputs();
 
         // Handle file upload
         async function handleFile(file) {
@@ -418,7 +616,7 @@
                     file,
                     'eng',
                     {
-                        logger: m => {
+                        logger: (m) => {
                             if (m.status === 'recognizing text') {
                                 ocrStatus.textContent = `Reading scorecard... ${Math.round(m.progress * 100)}%`;
                             }
@@ -448,7 +646,6 @@
 
         // Parse scores from OCR text
         function parseScoresFromText(text) {
-            // Look for patterns like "Hole 1: 4" or just numbers in sequence
             const lines = text.split('\n');
             const scores = {};
 
@@ -459,33 +656,33 @@
                 // Pattern: "Hole X" followed by a number
                 const holeMatch = line.match(/hole\s*(\d+)/i);
                 if (holeMatch) {
-                    const holeNum = parseInt(holeMatch[1]);
-                    // Look for score in same line or next line
+                    const holeNum = parseInt(holeMatch[1], 10);
                     const scoreMatch = line.match(/(\d+)/g);
                     if (scoreMatch && holeNum >= 1 && holeNum <= 18) {
-                        // Take the last number as the score (most likely to be the actual score)
-                        scores[holeNum] = parseInt(scoreMatch[scoreMatch.length - 1]);
+                        const score = parseInt(scoreMatch[scoreMatch.length - 1], 10);
+                        if (score >= 1 && score <= 15) {
+                            scores[holeNum] = score;
+                        }
                     }
                 }
 
                 // Pattern: "X." (hole number) followed by score
                 const holeDotMatch = line.match(/^(\d+)\.\s*(\d+)/);
                 if (holeDotMatch) {
-                    const holeNum = parseInt(holeDotMatch[1]);
-                    const score = parseInt(holeDotMatch[2]);
+                    const holeNum = parseInt(holeDotMatch[1], 10);
+                    const score = parseInt(holeDotMatch[2], 10);
                     if (holeNum >= 1 && holeNum <= 18 && score >= 1 && score <= 15) {
                         scores[holeNum] = score;
                     }
                 }
 
-                // Pattern: Just numbers in sequence (1-18 holes worth of scores)
+                // Pattern: row of hole scores
                 const numbers = line.match(/\b(\d+)\b/g);
                 if (numbers && numbers.length >= 9 && numbers.length <= 18) {
-                    // Might be a row of scores
                     numbers.forEach((num, idx) => {
                         const holeNum = idx + 1;
-                        const score = parseInt(num);
-                        if (score >= 1 && score <= 15 && !scores[holeNum]) {
+                        const score = parseInt(num, 10);
+                        if (holeNum <= 18 && score >= 1 && score <= 15 && !scores[holeNum]) {
                             scores[holeNum] = score;
                         }
                     });
@@ -503,7 +700,6 @@
             const lowerText = text.toLowerCase();
             for (const name of playerNames) {
                 if (lowerText.includes(name.toLowerCase())) {
-                    // Map first name to select value
                     const select = document.getElementById('playerSelect');
                     for (const option of select.options) {
                         if (option.text.toLowerCase().includes(name.toLowerCase())) {
@@ -514,123 +710,136 @@
                     break;
                 }
             }
+
+            // Try to detect course from text
+            const courseHints = [
+                { id: 'buffalo-ridge', keywords: ['buffalo', 'ridge'] },
+                { id: 'paynes-valley', keywords: ['payne', 'valley'] },
+                { id: 'ozarks-national', keywords: ['ozarks', 'national'] },
+                { id: 'cliffhangers', keywords: ['cliffhangers', 'cliff'] }
+            ];
+
+            for (const hint of courseHints) {
+                if (hint.keywords.every((keyword) => lowerText.includes(keyword))) {
+                    document.getElementById('courseSelect').value = hint.id;
+                    break;
+                }
+            }
         }
 
-        // Save scores to IndexedDB
-        function saveScores() {
-            const player = document.getElementById('playerSelect').value;
-            const course = document.getElementById('courseSelect').value;
+        function calculateRoundLocally(courseId, scores) {
+            const course = COURSE_CONFIG[courseId];
+            if (!course) {
+                throw new Error('Invalid course selected');
+            }
 
-            if (!player || !course) {
+            const playedHoles = Object.keys(scores).map(Number).sort((a, b) => a - b);
+            if (playedHoles.length === 0) {
+                throw new Error('Please enter at least one score');
+            }
+
+            let totalStrokes = 0;
+            let totalPar = 0;
+
+            playedHoles.forEach((hole) => {
+                totalStrokes += scores[hole];
+                totalPar += course.pars[hole - 1];
+            });
+
+            return {
+                holesPlayed: playedHoles.length,
+                totalStrokes,
+                toPar: totalStrokes - totalPar
+            };
+        }
+
+        async function saveScoresViaConvex(entry) {
+            if (!convexClient || !convexConfig?.functions) {
+                throw new Error('Convex client is not initialized');
+            }
+
+            await convexClient.mutation(convexConfig.functions.submitScorecard, {
+                playerId: entry.playerId,
+                courseId: entry.courseId,
+                scores: entry.scores,
+                submittedAt: Date.parse(entry.submittedAt)
+            });
+
+            const payload = await convexClient.query(convexConfig.functions.getLeaderboard, {});
+            renderConvexLeaderboardPayload(payload);
+        }
+
+        // Save scores to Convex.
+        async function saveScores() {
+            const playerId = document.getElementById('playerSelect').value;
+            const courseId = document.getElementById('courseSelect').value;
+
+            if (!playerId || !courseId) {
                 alert('Please select a player and course');
                 return;
             }
 
             const scores = {};
-            let totalScore = 0;
-            let holesPlayed = 0;
-
             for (let i = 1; i <= 18; i++) {
-                const score = document.getElementById(`hole${i}`).value;
-                if (score) {
-                    scores[i] = parseInt(score);
-                    totalScore += scores[i];
-                    holesPlayed++;
+                const rawValue = document.getElementById(`hole${i}`).value.trim();
+                if (!rawValue) continue;
+
+                const parsed = parseInt(rawValue, 10);
+                if (!Number.isInteger(parsed) || parsed < 1 || parsed > 15) {
+                    alert(`Hole ${i} has an invalid score. Use a number between 1 and 15.`);
+                    return;
                 }
+                scores[i] = parsed;
             }
 
-            if (holesPlayed === 0) {
-                alert('Please enter at least one score');
+            let metrics;
+            try {
+                metrics = calculateRoundLocally(courseId, scores);
+            } catch (error) {
+                alert(error.message);
                 return;
             }
 
-            const transaction = db.transaction(['scores'], 'readwrite');
-            const store = transaction.objectStore('scores');
-
-            const record = {
-                player,
-                course,
+            const entry = {
+                playerId,
+                playerName: PLAYER_NAME_BY_ID[playerId] || playerId,
+                courseId,
+                courseName: COURSE_CONFIG[courseId]?.name || courseId,
                 scores,
-                totalScore,
-                holesPlayed,
-                timestamp: new Date().toISOString()
+                holesPlayed: metrics.holesPlayed,
+                totalStrokes: metrics.totalStrokes,
+                toPar: metrics.toPar,
+                submittedAt: new Date().toISOString()
             };
 
-            store.add(record);
-
-            transaction.oncomplete = () => {
-                alert(`✅ Saved! ${player} shot ${totalScore} through ${holesPlayed} holes`);
-                loadLeaderboard();
+            try {
+                await saveScoresViaConvex(entry);
+                alert(`✅ Saved! ${entry.playerName} is ${formatToPar(entry.toPar)} through ${entry.holesPlayed}`);
                 resetUpload();
-            };
-
-            transaction.onerror = () => {
-                alert('Failed to save scores');
-            };
-        }
-
-        // Load leaderboard from IndexedDB
-        function loadLeaderboard() {
-            if (!db) return;
-
-            const transaction = db.transaction(['scores'], 'readonly');
-            const store = transaction.objectStore('scores');
-            const request = store.getAll();
-
-            request.onsuccess = () => {
-                const scores = request.result;
-                const tbody = document.getElementById('leaderboardBody');
-                tbody.innerHTML = '';
-
-                // Group by player and get latest round
-                const playerRounds = {};
-                scores.forEach(score => {
-                    if (!playerRounds[score.player] || 
-                        new Date(score.timestamp) > new Date(playerRounds[score.player].timestamp)) {
-                        playerRounds[score.player] = score;
-                    }
-                });
-
-                // Sort by total score (ascending)
-                const sorted = Object.values(playerRounds).sort((a, b) => a.totalScore - b.totalScore);
-
-                sorted.forEach(round => {
-                    const row = document.createElement('tr');
-                    const playerName = document.getElementById('playerSelect')
-                        .querySelector(`option[value="${round.player}"]`)?.text || round.player;
-                    const courseName = document.getElementById('courseSelect')
-                        .querySelector(`option[value="${round.course}"]`)?.text || round.course;
-
-                    row.innerHTML = `
-                        <td>${playerName}</td>
-                        <td>${courseName}</td>
-                        <td>${round.holesPlayed}</td>
-                        <td class="total-score">${round.totalScore > 0 ? '+' : ''}${round.totalScore}</td>
-                        <td><span class="status-badge ${round.holesPlayed === 18 ? 'status-complete' : 'status-pending'}">${round.holesPlayed === 18 ? 'Complete' : 'In Progress'}</span></td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-                if (sorted.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 40px;">No scores yet. Upload your first scorecard!</td></tr>';
-                }
-            };
+            } catch (error) {
+                console.error('Convex save failed:', error);
+                setSyncStatus(false, 'Failed to save to Convex');
+                alert('Failed to save score to Convex. Check your connection and convexUrl.');
+            }
         }
 
         // Reset for next upload
         function resetUpload() {
             uploadZone.style.display = 'block';
+            processing.classList.remove('active');
             results.classList.remove('active');
             fileInput.value = '';
             document.getElementById('playerSelect').value = '';
             document.getElementById('courseSelect').value = '';
+            extractedText.textContent = '';
             for (let i = 1; i <= 18; i++) {
                 document.getElementById(`hole${i}`).value = '';
             }
         }
 
-        // Load leaderboard on page load
-        window.addEventListener('load', loadLeaderboard);
+        // Initialize page
+        generateHoleInputs();
+        window.addEventListener('load', initializeLiveScoring);
     </script>
 </body>
 </html>
