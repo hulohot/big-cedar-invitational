@@ -55,6 +55,10 @@ sudo systemctl status hulopredict
 - `GET /api/portfolio/:userId` - Get user's portfolio
 - `POST /api/trade` - Execute a trade
 
+## Live Scoring
+
+Live scoring is handled by Convex from the frontend. See [`docs/convex-live-scoring-rollout.md`](../docs/convex-live-scoring-rollout.md) and `scoring-config.js`.
+
 ## Database
 
 SQLite database file: `hulopredict.db`
